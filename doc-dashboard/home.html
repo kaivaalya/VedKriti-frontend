@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Dashboard</title>
+    <link rel="stylesheet" href="homeStyle.css">
+</head>
+<body>
+    <header>
+        <img id="logo" src="../media/VedKriti-icon.png" alt="VedKriti">
+        <nav class="tabs-container" aria-label="Doctor dashboard">
+            <a id="tab-1" href="#find" class="active-tab" aria-selected="true">Search Consultations</a>
+            <a id="tab-2" href="#consultations" aria-selected="false">Today's Consultations</a>
+            <a id="tab-3" href="#update" aria-selected="false">Update Availability</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="tabs_panel">
+            <section id="find" aria-labelledby="tab-1">
+                <form id="searchForm" class="search-card">
+                    <label for="patName">
+                        Patient Name
+                        <input type="search" id="patName" name="patName"
+                            placeholder="Search by patient name" autocomplete="off" required>
+                    </label>
+                    <button type="submit" id="search">Search</button>
+                </form>
+                <div id="searchMessage" class="message" aria-live="polite"></div>
+                <div id="searchResults" class="results"></div>
+            </section>
+
+            <section id="consultations" aria-labelledby="tab-2" hidden>
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Doctor dashboard</p>
+                        <h1>Today's Consultations</h1>
+                    </div>
+                    <div class="heading-actions">
+                        <button type="button" id="emergencyCancel" class="emergency-cancel">
+                            Emergency Cancel Today
+                        </button>
+                        <button type="button" id="refreshConsultations">Refresh</button>
+                    </div>
+                </div>
+                <div id="consultationMessage" class="message" aria-live="polite"></div>
+                <div id="todayResults" class="results"></div>
+            </section>
+
+            <section id="update" aria-labelledby="tab-3" hidden>
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Schedule settings</p>
+                        <h1>Update Availability</h1>
+                    </div>
+                </div>
+                <form id="availabilityForm" class="availability-card">
+                    <label for="availabilityDate">
+                        Date
+                        <input type="date" id="availabilityDate" name="date" required>
+                    </label>
+                    <div class="capacity-grid">
+                        <label for="morningCapacity">
+                            Morning Capacity
+                            <input type="number" id="morningCapacity" name="morningCapacity"
+                                min="0" value="0" required>
+                        </label>
+                        <label for="afternoonCapacity">
+                            Afternoon Capacity
+                            <input type="number" id="afternoonCapacity" name="afternoonCapacity"
+                                min="0" value="0" required>
+                        </label>
+                        <label for="eveningCapacity">
+                            Evening Capacity
+                            <input type="number" id="eveningCapacity" name="eveningCapacity"
+                                min="0" value="0" required>
+                        </label>
+                    </div>
+                    <button type="submit" id="updateAvailability">Update Availability</button>
+                </form>
+                <div id="availabilityMessage" class="message" aria-live="polite"></div>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <img id="bottom" src="../media/VedKriti-icon.png" alt="VedKriti">
+        <h2>#Delivering Quality Health Service</h2>
+        <p id="desc">The platform simplifies doctor discovery, prevents slot
+            overbooking, improves clinic workflow, and helps doctors manage consultations.</p>
+        <p class="copyright">&copy; 2026 VedKriti. All rights reserved.</p>
+    </footer>
+
+    <script type="module" src="homeAction.js"></script>
+</body>
+</html>

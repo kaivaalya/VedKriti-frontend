@@ -3,20 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Video Consultation | VedKriti</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <button id="join-btn">Join Stream</button>
-    <div id="stream-wrapper">
-        <div id="video-stream"></div>
-        <div id="stream-controls">
-            <button id="leave-btn">Leave Stream</button>
-            <button id="mic-btn">Mic On</button>
-            <button id="cam-btn">Camera On</button>
+    <header class="conference-header">
+        <img src="../media/VedKriti-icon.png" alt="VedKriti">
+        <div><span class="live-dot"></span><span id="room-status">Ready to join</span></div>
+    </header>
+    <main class="conference-main">
+        <section class="conference-intro" id="join-panel">
+            <p class="eyebrow">Secure consultation</p>
+            <h1>Your video appointment is ready</h1>
+            <p>Allow camera and microphone access when prompted.</p>
+            <button id="join-btn">Join consultation</button>
+        </section>
+        <div id="stream-wrapper" hidden>
+            <div id="video-stream"></div>
+            <div id="stream-controls">
+                <button id="mic-btn">Mute microphone</button>
+                <button id="cam-btn">Turn camera off</button>
+                <button id="leave-btn" class="danger">Leave consultation</button>
+            </div>
         </div>
-    </div>
+        <p id="conference-error" role="alert"></p>
+    </main>
     
     <script src="AgoraRTC_N-4.24.5.js"></script>
     <script src="app.js"></script>

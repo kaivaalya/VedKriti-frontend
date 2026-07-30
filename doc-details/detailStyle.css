@@ -1,59 +1,458 @@
-.card{
-    align-self: center;
-    margin: 20px;
-    box-shadow:
-        0 4px  8px rgba(0,0,0,.06),
-        0 12px 24px rgba(0,0,0,.08);
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    overflow: hidden;
-    padding: 10px;
-    width: 60vw;
-    height: auto;
+:root {
+    --ink: #15191a;
+    --ink-soft: #252b2c;
+    --paper: #f4f1eb;
+    --surface: #ffffff;
+    --accent: #2eb9c2;
+    --accent-light: #55ced5;
+    --accent-dark: #168d97;
+    --muted: #6f7776;
+    --line: rgba(21, 25, 26, 0.15);
+    --danger: #b42318;
+    --shadow: 10px 12px 0 var(--ink);
 }
 
-form div{
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    min-height: 100vh;
+    overflow-x: hidden;
+    color: var(--ink);
+    background:
+        radial-gradient(
+            circle at 10% 5%,
+            rgba(46, 185, 194, 0.13),
+            transparent 28rem
+        ),
+        var(--paper);
+    font-family: "DM Sans", Arial, sans-serif;
+    line-height: 1.5;
+}
+
+button,
+input,
+textarea {
+    font: inherit;
+}
+
+/* Tabs */
+
+.tabs-container {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    width: 100%;
+    padding: 0 5vw;
+    overflow-x: auto;
+    color: #fff;
+    background: rgba(21, 25, 26, 0.96);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(14px);
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) var(--ink);
+}
+
+.tabs-container ul {
+    display: flex;
+    width: max-content;
+    min-width: 100%;
+    justify-content: center;
+    list-style: none;
+}
+
+.tabs-container a {
+    position: relative;
+    display: block;
+    padding: 1.25rem clamp(0.8rem, 1.7vw, 1.6rem);
+    color: rgba(255, 255, 255, 0.66);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition:
+        color 180ms ease,
+        background-color 180ms ease;
+}
+
+.tabs-container a::after {
+    content: "";
+    position: absolute;
+    right: 0.8rem;
+    bottom: 0;
+    left: 0.8rem;
+    height: 3px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transition: transform 180ms ease;
+}
+
+.tabs-container a:hover,
+.tabs-container a:focus-visible,
+.tabs-container a.active {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.tabs-container a.active::after {
+    transform: scaleX(1);
+}
+
+/* Panel and card */
+
+.tabs__panel {
+    display: block;
+    width: 100%;
+    min-height: calc(100vh - 63px);
+    padding: clamp(2rem, 6vw, 5rem) 1.25rem;
+}
+
+.tabs__panel > div {
     width: 100%;
 }
 
-img{
-    height: 100px;
-    width: 100px;
-    border-radius: 50%;
-    overflow: hidden;
-    align-self: center;
-}
-
-.tabs__panel{
-    height: 50vh;
-    width: 100vw;
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-}
-
-#pfpl{
-    text-align: center;
-    display: block;
-    width: 200px;
-    background: #b71c1c;
-    color: #fff;
-    padding: 12px;
-    margin: 30px auto;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-#pfp{
+.tabs__panel > div[hidden] {
     display: none;
 }
 
-textarea{
+.card {
+    width: min(920px, 100%);
+    min-height: 0;
+    margin: 0 auto;
+    padding: clamp(1.35rem, 4vw, 3rem);
+    overflow: visible;
+    background: var(--surface);
+    border: 1px solid rgba(21, 25, 26, 0.7);
+    border-radius: 0;
+    box-shadow: var(--shadow);
+}
+
+form {
+    display: grid;
+    gap: 1.25rem;
     width: 100%;
+}
+
+/* Existing br tags should not control form spacing. */
+
+form > br,
+form span > br {
+    display: none;
+}
+
+form div {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+    width: 100%;
+}
+
+form div:has(> label:only-child),
+#recordsForm div {
+    grid-template-columns: 1fr;
+}
+
+label {
+    display: grid;
+    gap: 0.5rem;
+    min-width: 0;
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.055em;
+    text-transform: uppercase;
+}
+
+input,
+textarea {
+    width: 100%;
+    color: var(--ink);
+    background: #faf9f6;
+    border: 1px solid var(--line);
+    border-radius: 0;
+    outline: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    letter-spacing: normal;
+    text-transform: none;
+    transition:
+        border-color 180ms ease,
+        box-shadow 180ms ease,
+        background-color 180ms ease;
+}
+
+input {
+    min-height: 50px;
+    padding: 0 0.9rem;
+}
+
+textarea {
+    min-height: 150px;
+    padding: 0.9rem;
+    line-height: 1.6;
+    resize: vertical;
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: #969c9b;
+}
+
+input:focus,
+textarea:focus {
+    background: #fff;
+    border-color: var(--accent-dark);
+    box-shadow: 0 0 0 3px rgba(46, 185, 194, 0.15);
+}
+
+input[type="file"] {
+    min-height: auto;
+    padding: 0.65rem;
+    border-style: dashed;
+    cursor: pointer;
+}
+
+input[type="file"]::file-selector-button {
+    margin-right: 0.8rem;
+    padding: 0.65rem 0.9rem;
+    color: #fff;
+    background: var(--ink);
+    border: 0;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+/* Buttons */
+
+input[type="submit"],
+button {
+    min-height: 48px;
+    padding: 0.75rem 1.25rem;
+    color: var(--ink);
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition:
+        transform 180ms ease,
+        background-color 180ms ease,
+        box-shadow 180ms ease;
+}
+
+input[type="submit"]:hover,
+button:hover {
+    background: var(--accent-light);
+    box-shadow: 0 7px 18px rgba(46, 185, 194, 0.24);
+    transform: translateY(-2px);
+}
+
+form > input[type="submit"] {
+    width: min(240px, 100%);
+    justify-self: end;
+}
+
+#add {
+    color: #fff;
+    background: var(--ink);
+    border-color: var(--ink);
+}
+
+.delBtn {
+    width: fit-content;
+    color: var(--danger);
+    background: transparent;
+    border-color: rgba(180, 35, 24, 0.45);
+}
+
+.delBtn:hover {
+    color: #fff;
+    background: var(--danger);
+    border-color: var(--danger);
+    box-shadow: none;
+}
+
+/* Experience entries */
+
+#experiance form > span {
+    display: grid;
+    gap: 1.25rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--line);
+}
+
+/* Holidays */
+
+fieldset {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(110px, 1fr));
+    gap: 0.7rem;
+    width: 100%;
+    padding: 1.25rem;
+    border: 1px solid var(--line);
+}
+
+legend {
+    padding: 0 0.55rem;
+    color: var(--accent-dark);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+fieldset label {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.65rem;
+    background: #faf9f6;
+    cursor: pointer;
+    font-size: 0.72rem;
+}
+
+fieldset input[type="checkbox"] {
+    width: 17px;
+    min-height: 17px;
+    accent-color: var(--accent-dark);
+}
+
+/* Profile picture */
+
+#about form > div:first-child {
+    grid-template-columns: 120px minmax(0, 1fr);
+    align-items: center;
+}
+
+#about img {
+    width: 110px;
+    height: 110px;
+    object-fit: cover;
+    border: 4px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px var(--line);
+}
+
+#pfpl {
+    display: flex;
+    min-height: 50px;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+    color: #fff;
+    text-align: center;
+    background: var(--ink);
+    cursor: pointer;
+}
+
+#pfpl:hover {
+    background: var(--accent-dark);
+}
+
+#pfp {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Tablet */
+
+@media (max-width: 800px) {
+    .tabs-container {
+        padding: 0;
+    }
+
+    .tabs-container ul {
+        justify-content: flex-start;
+    }
+
+    .tabs__panel {
+        padding: 2.5rem 1.25rem;
+    }
+
+    .card {
+        box-shadow: 7px 8px 0 var(--ink);
+    }
+
+    fieldset {
+        grid-template-columns: repeat(2, minmax(110px, 1fr));
+    }
+}
+
+/* Phones */
+
+@media (max-width: 600px) {
+    .tabs-container a {
+        padding: 1rem 0.9rem;
+        font-size: 0.66rem;
+    }
+
+    .tabs__panel {
+        min-height: calc(100vh - 52px);
+        padding: 1.25rem 0.85rem 2rem;
+    }
+
+    .card {
+        padding: 1.15rem;
+        border-right: 0;
+        border-left: 0;
+        box-shadow: 4px 5px 0 var(--ink);
+    }
+
+    form,
+    #experiance form > span {
+        gap: 1rem;
+    }
+
+    form div,
+    #about form > div:first-child {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    #about form > div:first-child {
+        justify-items: center;
+    }
+
+    #pfpl {
+        width: 100%;
+    }
+
+    fieldset {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+    }
+
+    form > input[type="submit"],
+    input[type="submit"],
+    button,
+    .delBtn {
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
 }

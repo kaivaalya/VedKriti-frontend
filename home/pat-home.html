@@ -3,147 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home-Page</title>
-    <link rel="stylesheet" href="homeStyle.css"> 
+    <title>Patient Dashboard | VedKriti</title>
+    <link rel="stylesheet" href="homeStyle.css">
 </head>
 <body>
-    <header>
-        <img id="logo" src="../media/VedKriti-icon.png" alt="VedKriti">
-        <div class="tabs-container">
-            <div><a id="tab-1" href="#find">Find Doctor</a></div>
-            <div><a id="tab-2" href="#consultations">Upcomming Consultations</a></div>
-            <div><a id="tab-3" href="#bookings">Past Bookings</a></div>
-            <div><a id="tab-4" href="#reports">Reports</a></div>
-        </div>
+    <header class="site-header">
+        <a class="brand" href="#find" aria-label="VedKriti home">
+            <img id="logo" src="../media/VedKriti-icon.png" alt="VedKriti">
+        </a>
+        <nav class="tabs-container" aria-label="Patient dashboard">
+            <a id="tab-1" href="#find" class="active" aria-selected="true">Find Doctor</a>
+            <a id="tab-2" href="#consultations" aria-selected="false">Upcoming Consultations</a>
+            <a id="tab-3" href="#bookings" aria-selected="false">Past Bookings</a>
+            <a id="tab-4" href="#reports" aria-selected="false">Reports</a>
+        </nav>
     </header>
+
     <main>
         <div class="tabs_panel">
-            <div id="find" aria-labelledby="tab-1">
-                <div id="filter">
-                    
+            <section id="find" aria-labelledby="tab-1">
+                <aside id="filter">
                     <form id="signinForm">
-                        <h1>Search Filter</h1>
-                        <hr>
-                        <br>
-                        <label for="city">City : </label>
-                        <input type="text" id="city" name="city" placeholder="Enter City">
-                        <br>
-                        <label for="speciality">Speciality : </label>
-                        <input type="text" id="speciality" name="speciality" placeholder="Enter Speciality">
-                        <br>
-                        <label for="facility">Facility : </label>
-                        <input type="text" id="facility" name="facility" placeholder="Enter name of clinic/hospital">
-                        <br>
-                        <label for="name">Doctor : </label>
-                        <input type="text" id="name" name="name" placeholder="Enter Doctor's Name">
-                        <br>
-                        <label for="date">Date : </label>
-                        <input type="date" id="date" name="date" placeholder="Enter Date">
-                        <br>
-                        <label for="slot">Slot : </label>
-                        <select id="slot" name="slot">
-                            <option value="Any" disabled selected>Any</option>
-                            <option value="MORNING">Morning</option>
-                            <option value="AFTERNOON">Afternoon</option>
-                            <option value="EVENING">Evening</option>
-                        </select>
-                        <br>
-                        <p style="color: rgb(94, 7, 7);"><small id = "err"></small></p>
-                        <br>
-                        <div>
-                            <input id="search" type="submit">
+                        <div class="form-heading">
+                            <p class="eyebrow">Doctor discovery</p>
+                            <h1>Find a doctor</h1>
+                            <p>Search by location, speciality, facility, date or slot.</p>
                         </div>
+                        <div class="form-group">
+                            <label for="city">City</label>
+                            <input id="city" name="city" type="text" placeholder="e.g. Gwalior">
+                        </div>
+                        <div class="form-group">
+                            <label for="speciality">Speciality</label>
+                            <input id="speciality" name="speciality" type="text" placeholder="e.g. Cardiologist">
+                        </div>
+                        <div class="form-group">
+                            <label for="facility">Facility</label>
+                            <input id="facility" name="facility" type="text" placeholder="Clinic or hospital">
+                        </div>
+                        <div class="form-group">
+                            <label for="name">Doctor name</label>
+                            <input id="name" name="name" type="text" placeholder="Doctor's name">
+                        </div>
+                        <div class="filter-row">
+                            <div class="form-group">
+                                <label for="date">Date</label>
+                                <input id="date" name="date" type="date">
+                            </div>
+                            <div class="filter-row price-filter-row">
+                                <div class="form-group">
+                                    <label for="minPrice">Minimum price</label>
+
+                                    <input
+                                        id="minPrice"
+                                        name="minPrice"
+                                        type="number"
+                                        min="0"
+                                        step="1"
+                                        placeholder="₹0"
+                                    >
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="maxPrice">Maximum price</label>
+
+                                    <input
+                                        id="maxPrice"
+                                        name="maxPrice"
+                                        type="number"
+                                        min="0"
+                                        step="1"
+                                        placeholder="₹2000"
+                                    >
+                                </div>
+                            </div>
+
+                            <div class="filter-row">
+                                <div class="form-group">
+                                    <label for="minRating">Minimum rating</label>
+
+                                    <select id="minRating" name="minRating">
+                                        <option value="">Any rating</option>
+                                        <option value="1">1 star and above</option>
+                                        <option value="2">2 stars and above</option>
+                                        <option value="3">3 stars and above</option>
+                                        <option value="4">4 stars and above</option>
+                                        <option value="5">5 stars</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="date">Date</label>
+
+                                    <input
+                                        id="date"
+                                        name="date"
+                                        type="date"
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                        <p id="err" class="error-message" role="alert"></p>
+                        <button id="search" type="submit">Search Doctors</button>
                     </form>
-                </div>
-                <div id="searchResults">
-                    <div class="card" id="x">
-                        <div>
-                            <img src="../media/doc-profile.jpg" alt="Profile">
-                        </div>
-                        <div class="details">
-                            <h1>Dr. Rajesh Kiran</h1>
-                            <br>
-                            <b>degreeType - degreeName - fieldOfStudy</b>
-                            <b>AIIMS Delhi</b>
-                            <b>Nephrology</b>
-                            <br>
-                            <b>India, Karnataka, Bengaluru,</b>
-                            <p>Jyoti Clinic</p>
-                            <br>
-                            <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Assumenda soluta sint excepturi nulla, dolor porro rerum impedit minus quae a nihil odio qui iusto cumque magnam vero atque placeat omnis.</p>
-                        </div>
-                        <div class="price">
-                            Consultation Fee : 
-                            &#8377;100
-                        </div>
+                </aside>
+
+                <div id="searchResults" class="result-list" aria-live="polite">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">+</div>
+                        <h2>Search for a doctor</h2>
+                        <p>Your matching doctors will appear here.</p>
                     </div>
                 </div>
-            </div>
-            <div id="consultations" aria-labelledby="tab-2">
-                <div class="card fw" id="x">
-                    <div>
-                        <img src="../media/pat-profile.jpg" alt="Profile">
-                    </div>
-                    <div class="details">
-                        <h1>Dr. Rajesh Kiran</h1>
-                        <br>
-                        <b>degreeType - degreeName - fieldOfStudy</b>
-                        <b>AIIMS Delhi</b>
-                        <b>Nephrology</b>
-                        <br>
-                        <b>India, Karnataka, Bengaluru,</b>
-                        <p>Jyoti Clinic</p>
-                        <br>
-                        <p>slot</p>
-                        <p>token</p>
-                        <p>status</p>
-                        <p>date</p>
-                        <p>consultationType</p>
-                    </div>
+            </section>
+
+            <section id="consultations" class="dashboard-panel" aria-labelledby="tab-2" hidden>
+                <div class="panel-heading">
+                    <div><p class="eyebrow">Appointments</p><h1>Upcoming Consultations</h1></div>
+                    <button id="refreshConsultations" type="button">Refresh</button>
                 </div>
-            </div>
-            <div id="bookings" aria-labelledby="tab-3">
-                <div class="card fw" id="x">
-                    <div>
-                        <img src="../media/pat-profile.jpg" alt="Profile">
-                    </div>
-                    <div class="details">
-                        <h1>Dr. Rajesh Kiran</h1>
-                        <br>
-                        <b>degreeType - degreeName - fieldOfStudy</b>
-                        <b>AIIMS Delhi</b>
-                        <b>Nephrology</b>
-                        <br>
-                        <b>India, Karnataka, Bengaluru,</b>
-                        <p>Jyoti Clinic</p>
-                        <br>
-                        <p>slot</p>
-                        <p>token</p>
-                        <p>status</p>
-                        <p>date</p>
-                        <p>rating</p>
-                        <p>feedback</p>
-                        <p>consultationType</p>
-                    </div>
+                <p id="consultationMessage" class="message" aria-live="polite"></p>
+                <div id="consultationResults" class="result-list"></div>
+            </section>
+
+            <section id="bookings" class="dashboard-panel" aria-labelledby="tab-3" hidden>
+                <div class="panel-heading">
+                    <div><p class="eyebrow">History</p><h1>Past Bookings</h1></div>
                 </div>
-            </div>
-            <div id="reports" aria-labelledby="tab-4">
-                <div class="card fw">
-                    <a href="../media/bstar.png" download>
-                        Download
-                    </a>
+                <p id="bookingHistoryMessage" class="message" aria-live="polite"></p>
+                <div id="pastBookingResults" class="result-list"></div>
+            </section>
+
+            <section id="reports" class="dashboard-panel" aria-labelledby="tab-4" hidden>
+                <div class="panel-heading">
+                    <div><p class="eyebrow">Medical files</p><h1>Reports</h1></div>
                 </div>
-            </div>
+                <p id="reportMessage" class="message" aria-live="polite"></p>
+                <div id="reportResults" class="result-list"></div>
+            </section>
         </div>
     </main>
+
+    <dialog id="bookingDialog" class="booking-dialog">
+        <form id="bookingForm" class="booking-form">
+            <div class="booking-dialog-header">
+                <div><p class="eyebrow">Appointment details</p><h2>Confirm your booking</h2></div>
+                <button id="closeBookingDialog" class="dialog-close" type="button" aria-label="Close">&times;</button>
+            </div>
+            <div class="selected-slot-summary">
+                <p>Doctor <strong id="selectedDoctor">—</strong></p>
+                <p>Date <strong id="selectedDate">—</strong></p>
+                <p>Slot <strong id="selectedShift">—</strong></p>
+                <p>Availability <strong id="selectedAvailability">—</strong></p>
+            </div>
+            <fieldset class="consultation-type-options">
+                <legend>Consultation type</legend>
+                <label class="consultation-option">
+                    <input type="radio" name="consultationType" value="ONLINE" required>
+                    <span><strong>Online consultation</strong><small>Meet the doctor through a secure video call.</small></span>
+                </label>
+                <label class="consultation-option">
+                    <input type="radio" name="consultationType" value="OFFLINE" required>
+                    <span><strong>Offline consultation</strong><small>Visit the doctor's clinic or hospital.</small></span>
+                </label>
+            </fieldset>
+            <p id="bookingError" class="error-message" role="alert"></p>
+            <div class="booking-dialog-actions">
+                <button id="cancelBooking" class="secondary-button" type="button">Cancel</button>
+                <button id="confirmBooking" class="primary-button" type="submit">Confirm Booking</button>
+            </div>
+        </form>
+    </dialog>
+
     <footer>
         <img id="bottom" src="../media/VedKriti-icon.png" alt="VedKriti">
-        <h1>#Delivering Quality Health Service</h1>
-        <br>
-        <div><p id="desc">The platform is designed to simplify doctor discovery, reduce appointment confusion, prevent slot overbooking, improve clinic workflow, and assist doctors with AI generated patient pre-diagnosis summaries.</p></div>
-        <br>
-        <div><p>&copy; 2026 VedKriti. All rights reserved.</p></div>
+        <h2>#Delivering Quality Health Service</h2>
+        <p id="desc">VedKriti simplifies doctor discovery, appointment booking and secure online consultations.</p>
+        <p class="copyright">&copy; 2026 VedKriti. All rights reserved.</p>
     </footer>
-    <script type="module" src="homeAction.js"></script>
+    <script type="module" src="pat-homeAction.js"></script>
 </body>
 </html>
