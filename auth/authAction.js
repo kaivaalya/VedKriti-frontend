@@ -179,7 +179,7 @@ form.addEventListener("submit", async (event) => {
             return;
         }
 
-        localStorage.setItem("token", data.accessToken);
+        localStorage.setItem("token", data.token);
         localStorage.setItem("userId", data.userId);
         localStorage.setItem("role", data.role);
         localStorage.setItem("name", data.name);
@@ -192,7 +192,7 @@ form.addEventListener("submit", async (event) => {
         } else if (normalizedRole === "DOCTOR") {
             window.location.href = "../doc-details/details.html";
         } else if (normalizedRole === "ADMIN") {
-            window.location.href = "../admin/admin.html";
+            window.location.href = "../admin-dashboard/home.html";
         }
     } catch (error) {
         console.error(error);

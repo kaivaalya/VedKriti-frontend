@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>VedKriti Admin Dashboard</title>
+
+    <link
+        rel="stylesheet"
+        href="homeStyle.css"
+    >
+</head>
+
+<body>
+    <header>
+        <div class="brand">
+            <div class="brand-mark">V</div>
+
+            <div>
+                <h1>VedKriti</h1>
+                <span>ADMIN CONSOLE</span>
+            </div>
+        </div>
+
+        <p class="administrator">
+            <span></span>
+            Platform Administrator
+        </p>
+    </header>
+
+    <nav
+        class="tabs-container"
+        role="tablist"
+        aria-label="Admin dashboard"
+    >
+        <button
+            class="tab active"
+            type="button"
+            data-panel="statistics"
+            role="tab"
+            aria-selected="true"
+        >
+            Statistics
+        </button>
+
+        <button
+            class="tab"
+            type="button"
+            data-panel="doctors"
+            role="tab"
+            aria-selected="false"
+        >
+            View Doctors
+        </button>
+
+        <button
+            class="tab"
+            type="button"
+            data-panel="verify"
+            role="tab"
+            aria-selected="false"
+        >
+            Verify Doctors
+
+            <span
+                id="pendingBadge"
+                class="pending-badge"
+                hidden
+            ></span>
+        </button>
+    </nav>
+
+    <main>
+        <p
+            id="globalMessage"
+            class="message"
+            aria-live="polite"
+        ></p>
+
+        <!-- ================= STATISTICS ================= -->
+
+        <section
+            id="statistics"
+            class="tab-panel"
+            role="tabpanel"
+        >
+            <p class="section-label">
+                PLATFORM OVERVIEW
+            </p>
+
+            <h2>Statistics</h2>
+
+            <p class="section-description">
+                A quick look at VedKriti's healthcare network.
+            </p>
+
+            <div id="statisticsLoader">
+                Loading platform statistics...
+            </div>
+
+            <div
+                id="statisticsContent"
+                class="statistics-layout"
+                hidden
+            >
+                <article class="chart-card">
+                    <div
+                        id="doctorPieChart"
+                        class="pie-chart"
+                        aria-label="Doctor verification statistics"
+                    >
+                        <div class="pie-centre">
+                            <strong id="totalDoctors">
+                                0
+                            </strong>
+
+                            <span>Total doctors</span>
+                        </div>
+                    </div>
+
+                    <div class="chart-legend">
+                        <div>
+                            <span class="legend-dot verified-dot"></span>
+
+                            <p>Verified doctors</p>
+
+                            <strong id="verifiedDoctors">
+                                0
+                            </strong>
+                        </div>
+
+                        <div>
+                            <span class="legend-dot pending-dot"></span>
+
+                            <p>Pending verification</p>
+
+                            <strong id="pendingDoctors">
+                                0
+                            </strong>
+                        </div>
+                    </div>
+                </article>
+
+                <div class="metric-grid">
+                    <article class="metric-card">
+                        <span>Registered patients</span>
+
+                        <strong id="totalPatients">0</strong>
+
+                        <small>People using VedKriti</small>
+                    </article>
+
+                    <article class="metric-card">
+                        <span>Total bookings</span>
+
+                        <strong id="totalBookings">0</strong>
+
+                        <small>Appointments created</small>
+                    </article>
+
+                    <article class="metric-card">
+                        <span>Completed consultations</span>
+
+                        <strong id="completedConsultations">
+                            0
+                        </strong>
+
+                        <small id="completionRate">
+                            0% completion rate
+                        </small>
+                    </article>
+
+                    <article class="metric-card highlighted-card">
+                        <span>Verified network</span>
+
+                        <strong id="verifiedPercentage">
+                            0%
+                        </strong>
+
+                        <small>of doctors are approved</small>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= VIEW DOCTORS ================= -->
+
+        <section
+            id="doctors"
+            class="tab-panel"
+            role="tabpanel"
+            hidden
+        >
+            <p class="section-label">
+                DOCTOR DIRECTORY
+            </p>
+
+            <h2>View Doctors</h2>
+
+            <p class="section-description">
+                Search verified doctors and manage platform access.
+            </p>
+
+            <form id="doctorSearchForm" class="filter-form">
+                <label>
+                    City
+
+                    <input
+                        id="city"
+                        name="city"
+                        type="text"
+                        placeholder="e.g. Gwalior"
+                    >
+                </label>
+
+                <label>
+                    Facility
+
+                    <input
+                        id="facilityName"
+                        name="facilityName"
+                        type="text"
+                        placeholder="e.g. Aarogya Clinic"
+                    >
+                </label>
+
+                <label>
+                    Specialization
+
+                    <input
+                        id="specialization"
+                        name="specialization"
+                        type="text"
+                        placeholder="e.g. Cardiology"
+                    >
+                </label>
+
+                <label>
+                    Doctor name
+
+                    <input
+                        id="doctorName"
+                        name="name"
+                        type="text"
+                        placeholder="e.g. Sharma"
+                    >
+                </label>
+
+                <label>
+                    Minimum fee
+
+                    <input
+                        id="minFee"
+                        name="minFee"
+                        type="number"
+                        min="0"
+                        placeholder="₹0"
+                    >
+                </label>
+
+                <label>
+                    Maximum fee
+
+                    <input
+                        id="maxFee"
+                        name="maxFee"
+                        type="number"
+                        min="0"
+                        placeholder="₹1500"
+                    >
+                </label>
+
+                <label>
+                    Minimum rating
+
+                    <input
+                        id="minRating"
+                        name="minRating"
+                        type="number"
+                        min="0"
+                        max="5"
+                        step="0.1"
+                        placeholder="0 – 5"
+                    >
+                </label>
+
+                <div class="filter-actions">
+                    <button
+                        id="searchDoctors"
+                        class="primary-button"
+                        type="submit"
+                    >
+                        Search Doctors
+                    </button>
+
+                    <button
+                        id="clearFilters"
+                        class="secondary-button"
+                        type="button"
+                    >
+                        Clear
+                    </button>
+                </div>
+            </form>
+
+            <div class="result-header">
+                <strong id="doctorCount">
+                    Search for doctors
+                </strong>
+
+                <span>Verified profiles only</span>
+            </div>
+
+            <p
+                id="doctorMessage"
+                class="message"
+                aria-live="polite"
+            ></p>
+
+            <div id="doctorResults" class="card-list"></div>
+        </section>
+
+        <!-- ================= VERIFY DOCTORS ================= -->
+
+        <section
+            id="verify"
+            class="tab-panel"
+            role="tabpanel"
+            hidden
+        >
+            <p class="section-label">
+                CREDENTIAL REVIEW
+            </p>
+
+            <h2>Verify Doctors</h2>
+
+            <p class="section-description">
+                Review pending applications and record your decision.
+            </p>
+
+            <div class="pending-summary">
+                <span id="pendingCount">0</span>
+                applications awaiting review
+            </div>
+
+            <p
+                id="verificationMessage"
+                class="message"
+                aria-live="polite"
+            ></p>
+
+            <div id="pendingDoctorResults" class="card-list"></div>
+        </section>
+    </main>
+
+    <footer>
+        VedKriti Admin Console · Secure platform management
+    </footer>
+
+    <script
+        type="module"
+        src="homeAction.js"
+    ></script>
+</body>
+</html>

@@ -1,8 +1,8 @@
 import { domain } from "../config.js";
 
 const ENDPOINTS = {
-    search: `${domain}/api/doctor/consultations/search`,
-    today: `${domain}/api/doctor/consultations/today`,
+    search: `${domain}/api/booking/doctor-booking`,//set
+    today: `${domain}/api/booking/doctor-booking/date?=${getTodayDate}`,//set
     availability: `${domain}/api/doctor/availability`,
 
     emergencyCancel:
@@ -762,8 +762,8 @@ $("#searchForm").addEventListener(
         const button =
             $("#search");
 
-        const patientName =
-            $("#patName").value.trim();
+        const date =
+            $("#date").value.trim();
 
         button.disabled = true;
 
@@ -777,16 +777,12 @@ $("#searchForm").addEventListener(
 
         try {
             const response = await fetch(
-                ENDPOINTS.search,
+                `${ENDPOINTS.search}/date?=${date}`,
                 {
                     method: "POST",
 
                     headers:
                         authHeaders(true),
-
-                    body: JSON.stringify({
-                        patientName
-                    })
                 }
             );
 

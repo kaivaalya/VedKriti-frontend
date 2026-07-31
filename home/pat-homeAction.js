@@ -758,7 +758,7 @@ $("#signinForm").addEventListener(
         try {
             const response =
                 await fetch(
-                    ENDPOINTS.findDoctor,
+                    `${ENDPOINTS.findDoctor}?city=${city}`,
                     {
                         method: "POST",
 

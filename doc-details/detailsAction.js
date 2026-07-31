@@ -874,7 +874,11 @@ document
                     headers: {
                         Authorization: `Bearer ${getToken()}`
                     },
-                    body: formData
+                    body: {
+                        file: medicalCertificate,
+                        title: "Medical Certificate",
+                        isPublic: "true"
+                    }
                 }
             );
 
@@ -883,7 +887,40 @@ document
             if (response.ok) {
                 alert(
                     data.message ||
-                    "Documents uploaded. Please wait while your credentials are verified."
+                    "Document uploaded. Please wait while your credentials are verified."
+                );
+            } else {
+                showError(
+                    data.message ||
+                    "Unable to upload documents."
+                );
+            }
+        } catch (error) {
+            showError(error.message);
+        }
+
+        try {
+            const response = await fetch(
+                `${domain}/api/doctor/set-records`,
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${getToken()}`
+                    },
+                    body: {
+                        file: governmentId,
+                        title: "Medical Certificate",
+                        isPublic: "true"
+                    }
+                }
+            );
+
+            const data = await getResponseData(response);
+
+            if (response.ok) {
+                alert(
+                    data.message ||
+                    "Document uploaded. Please wait while your credentials are verified."
                 );
             } else {
                 showError(
@@ -895,6 +932,8 @@ document
             showError(error.message);
         }
     });
+
+    
 
 /*
  * Show the first panel only after all panelactive event

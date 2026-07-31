@@ -12,7 +12,7 @@
         <nav class="tabs-container" aria-label="Doctor dashboard">
             <a id="tab-1" href="#find" class="active-tab" aria-selected="true">Search Consultations</a>
             <a id="tab-2" href="#consultations" aria-selected="false">Today's Consultations</a>
-            <a id="tab-3" href="#update" aria-selected="false">Update Availability</a>
+            <!-- <a id="tab-3" href="#update" aria-selected="false">Update Availability</a> -->
         </nav>
     </header>
 
@@ -20,10 +20,10 @@
         <div class="tabs_panel">
             <section id="find" aria-labelledby="tab-1">
                 <form id="searchForm" class="search-card">
-                    <label for="patName">
-                        Patient Name
-                        <input type="search" id="patName" name="patName"
-                            placeholder="Search by patient name" autocomplete="off" required>
+                    <label for="date">
+                        Date
+                        <input type="date" id="date" name="date"
+                            placeholder="Search by Date" autocomplete="off" required>
                     </label>
                     <button type="submit" id="search">Search</button>
                 </form>
@@ -48,7 +48,7 @@
                 <div id="todayResults" class="results"></div>
             </section>
 
-            <section id="update" aria-labelledby="tab-3" hidden>
+            <!-- <section id="update" aria-labelledby="tab-3" hidden>
                 <div class="section-heading">
                     <div>
                         <p class="eyebrow">Schedule settings</p>
@@ -80,7 +80,7 @@
                     <button type="submit" id="updateAvailability">Update Availability</button>
                 </form>
                 <div id="availabilityMessage" class="message" aria-live="polite"></div>
-            </section>
+            </section> -->
         </div>
     </main>
 
