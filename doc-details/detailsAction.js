@@ -977,8 +977,8 @@ document
         medicalCertForm.append("title", "Medical Certificate");
         medicalCertForm.append("isPublic", "true");
 
-        govtIDForm.append("file", medicalCertificate);
-        govtIDForm.append("title", "Medical Certificate");
+        govtIDForm.append("file", governmentId);
+        govtIDForm.append("title", "Government ID");
         govtIDForm.append("isPublic", "true");
 
         setButtonLoading(submitButton, true, "Uploading...");
