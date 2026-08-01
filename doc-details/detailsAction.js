@@ -970,23 +970,27 @@ document
             return;
         }
 
+        const medicalCertForm = new FormData();
+        const govtIDForm = new FormData();
+
+        medicalCertForm.append("file", medicalCertificate);
+        medicalCertForm.append("title", "Medical Certificate");
+        medicalCertForm.append("isPublic", "true");
+
+        govtIDForm.append("file", medicalCertificate);
+        govtIDForm.append("title", "Medical Certificate");
+        govtIDForm.append("isPublic", "true");
+
         setButtonLoading(submitButton, true, "Uploading...");
 
         try {
-            const response = await fetch(
-                `${domain}/api/doctor/set-records`,
-                {
-                    method: "POST",
-                    headers: {
-                        Authorization: `Bearer ${getToken()}`
-                    },
-                    body: {
-                        file: medicalCertificate,
-                        title: "Medical Certificate",
-                        isPublic: "true"
-                    }
-                }
-            );
+            const response = await fetch(`${domain}/api/doctor/set-records`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${getToken()}`
+                },
+                body: medicalCertForm
+            });
 
             const data = await getResponseData(response);
 
@@ -1006,20 +1010,13 @@ document
         }
 
         try {
-            const response = await fetch(
-                `${domain}/api/doctor/set-records`,
-                {
-                    method: "POST",
-                    headers: {
-                        Authorization: `Bearer ${getToken()}`
-                    },
-                    body: {
-                        file: governmentId,
-                        title: "Government ID",
-                        isPublic: "true"
-                    }
-                }
-            );
+            const response = await fetch(`${domain}/api/doctor/set-records`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${getToken()}`
+                },
+                body: govtIDForm
+            });
 
             const data = await getResponseData(response);
 
