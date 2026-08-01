@@ -28,16 +28,34 @@ const showError = (message) => {
     alert(message);
 };
 
+/*
+ * Reads the complete JSON response.
+ *
+ * For an object response:
+ *
+ * {
+ *     status: "SUCCESS",
+ *     data: {
+ *         city: "Gwalior"
+ *     }
+ * }
+ *
+ * It returns:
+ *
+ * {
+ *     status: "SUCCESS",
+ *     data: {...},
+ *     city: "Gwalior"
+ * }
+ *
+ * Arrays are not merged because array-based responses,
+ * such as experiences, are handled separately.
+ */
 const getResponseData = async (response) => {
     try {
         const json = await response.json();
         const responseData = json?.data;
 
-        /*
-         * The backend sends the actual response fields inside `data`.
-         * Keep root-level fields such as `message`, while exposing the
-         * nested fields directly to the rest of this file.
-         */
         if (
             responseData &&
             typeof responseData === "object" &&
@@ -55,51 +73,120 @@ const getResponseData = async (response) => {
     }
 };
 
-const setButtonLoading = (button, isLoading, loadingText = "Saving...") => {
+/*
+ * Starts or stops the loader on a button.
+ *
+ * It supports both:
+ *
+ * <button type="submit">Save</button>
+ *
+ * and:
+ *
+ * <input type="submit" value="Save">
+ */
+const setButtonLoading = (
+    button,
+    isLoading,
+    loadingText = "Saving..."
+) => {
     if (!button) {
         return;
     }
 
     if (isLoading) {
-        button.dataset.originalContent = button.innerHTML;
+        const isInput = button.matches(
+            'input[type="submit"], input[type="button"]'
+        );
+
+        button.dataset.controlType = isInput
+            ? "input"
+            : "button";
+
+        button.dataset.originalContent = isInput
+            ? button.value
+            : button.innerHTML;
+
         button.disabled = true;
         button.setAttribute("aria-busy", "true");
-        button.innerHTML = `
-            <span
-                aria-hidden="true"
-                style="
-                    display:inline-block;
-                    width:0.9em;
-                    height:0.9em;
-                    margin-right:0.5em;
-                    border:2px solid currentColor;
-                    border-right-color:transparent;
-                    border-radius:50%;
-                    vertical-align:-0.12em;
-                    animation:submit-button-spin 0.7s linear infinite;
-                "
-            ></span>${loadingText}
-        `;
+        button.classList.add("submit-button-loading");
+
+        if (isInput) {
+            button.value = `⏳ ${loadingText}`;
+        } else {
+            button.innerHTML = `
+                <span
+                    class="submit-button-spinner"
+                    aria-hidden="true"
+                ></span>
+                ${loadingText}
+            `;
+        }
+
         return;
     }
 
     button.disabled = false;
     button.removeAttribute("aria-busy");
+    button.classList.remove("submit-button-loading");
 
     if (button.dataset.originalContent !== undefined) {
-        button.innerHTML = button.dataset.originalContent;
+        if (button.dataset.controlType === "input") {
+            button.value =
+                button.dataset.originalContent;
+        } else {
+            button.innerHTML =
+                button.dataset.originalContent;
+        }
+
         delete button.dataset.originalContent;
+        delete button.dataset.controlType;
     }
 };
 
+/*
+ * Wait for the browser to paint the loader before
+ * starting the API request.
+ */
+const waitForNextPaint = () =>
+    new Promise((resolve) => {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(resolve);
+        });
+    });
+
+/*
+ * Add loader styling dynamically.
+ */
 if (!document.getElementById("submit-button-loader-style")) {
     const loaderStyle = document.createElement("style");
+
     loaderStyle.id = "submit-button-loader-style";
+
     loaderStyle.textContent = `
+        .submit-button-loading {
+            cursor: wait;
+            opacity: 0.8;
+        }
+
+        .submit-button-spinner {
+            display: inline-block;
+            width: 0.9em;
+            height: 0.9em;
+            margin-right: 0.5em;
+            border: 2px solid currentColor;
+            border-right-color: transparent;
+            border-radius: 50%;
+            vertical-align: -0.12em;
+            animation: submit-button-spin 0.7s linear infinite;
+        }
+
         @keyframes submit-button-spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
     `;
+
     document.head.appendChild(loaderStyle);
 }
 
@@ -122,10 +209,15 @@ const showPanel = (activePanel) => {
 
     tabButtons.forEach((tab) => {
         const isActive =
-            tab.getAttribute("href") === `#${activePanel.id}`;
+            tab.getAttribute("href") ===
+            `#${activePanel.id}`;
 
         tab.classList.toggle("active", isActive);
-        tab.setAttribute("aria-selected", String(isActive));
+
+        tab.setAttribute(
+            "aria-selected",
+            String(isActive)
+        );
 
         if (isActive) {
             tab.setAttribute("aria-current", "step");
@@ -144,14 +236,20 @@ const showPanel = (activePanel) => {
 tabContainer.addEventListener("click", (event) => {
     const clickedTab = event.target.closest("a");
 
-    if (!clickedTab || !tabContainer.contains(clickedTab)) {
+    if (
+        !clickedTab ||
+        !tabContainer.contains(clickedTab)
+    ) {
         return;
     }
 
     event.preventDefault();
 
-    const panelSelector = clickedTab.getAttribute("href");
-    const activePanel = document.querySelector(panelSelector);
+    const panelSelector =
+        clickedTab.getAttribute("href");
+
+    const activePanel =
+        document.querySelector(panelSelector);
 
     if (activePanel) {
         showPanel(activePanel);
@@ -185,28 +283,42 @@ document
                 {
                     method: "GET",
                     headers: {
-                        Authorization: `Bearer ${getToken()}`
+                        Authorization:
+                            `Bearer ${getToken()}`
                     }
                 }
             );
 
-            const data = await getResponseData(response);
+            const data =
+                await getResponseData(response);
 
             if (!response.ok) {
                 showError(
                     data.message ||
                     "Unable to get practice-location details."
                 );
+
                 return;
             }
 
-            document.getElementById("city").value = data.city || "";
-            document.getElementById("state").value = data.state || "";
-            document.getElementById("country").value = data.country || "";
-            document.getElementById("address").value = data.address || "";
-            document.getElementById("PIN").value = data.pin || "";
+            document.getElementById("city").value =
+                data.city || "";
+
+            document.getElementById("state").value =
+                data.state || "";
+
+            document.getElementById("country").value =
+                data.country || "";
+
+            document.getElementById("address").value =
+                data.address || "";
+
+            document.getElementById("PIN").value =
+                data.pin || "";
+
             document.getElementById("facility").value =
                 data.facilityName || "";
+
             document.getElementById("fee").value =
                 data.consultationFee ?? "";
         } catch (error) {
@@ -220,8 +332,8 @@ document
         event.preventDefault();
 
         const submitButton = event.currentTarget;
-
-        const currentForm = event.target.closest("form");
+        const currentForm =
+            submitButton.closest("form");
 
         if (!currentForm.checkValidity()) {
             currentForm.reportValidity();
@@ -229,37 +341,60 @@ document
         }
 
         const city =
-            document.getElementById("city").value.trim();
+            document
+                .getElementById("city")
+                .value.trim();
 
         const state =
-            document.getElementById("state").value.trim();
+            document
+                .getElementById("state")
+                .value.trim();
 
         const country =
-            document.getElementById("country").value.trim();
+            document
+                .getElementById("country")
+                .value.trim();
 
         const address =
-            document.getElementById("address").value.trim();
+            document
+                .getElementById("address")
+                .value.trim();
 
         const pin =
-            document.getElementById("PIN").value.trim();
+            document
+                .getElementById("PIN")
+                .value.trim();
 
         const facilityName =
-            document.getElementById("facility").value.trim();
+            document
+                .getElementById("facility")
+                .value.trim();
 
         const consultationFee =
             document.getElementById("fee").value;
 
-        setButtonLoading(submitButton, true);
+        setButtonLoading(
+            submitButton,
+            true,
+            "Saving..."
+        );
+
+        await waitForNextPaint();
 
         try {
             const response = await fetch(
                 `${domain}/api/doctor/set-practiceLocation`,
                 {
                     method: "PUT",
+
                     headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${getToken()}`
+                        "Content-Type":
+                            "application/json",
+
+                        Authorization:
+                            `Bearer ${getToken()}`
                     },
+
                     body: JSON.stringify({
                         city,
                         state,
@@ -272,20 +407,28 @@ document
                 }
             );
 
-            const data = await getResponseData(response);
+            const data =
+                await getResponseData(response);
 
-            if (response.ok) {
-                document.getElementById("tab2").click();
-            } else {
+            if (!response.ok) {
                 showError(
                     data.message ||
                     "Unable to save practice-location details."
                 );
+
+                return;
             }
+
+            document
+                .getElementById("tab2")
+                .click();
         } catch (error) {
             showError(error.message);
         } finally {
-            setButtonLoading(submitButton, false);
+            setButtonLoading(
+                submitButton,
+                false
+            );
         }
     });
 
@@ -301,19 +444,23 @@ document
                 `${domain}/api/doctor/get-education`,
                 {
                     method: "GET",
+
                     headers: {
-                        Authorization: `Bearer ${getToken()}`
+                        Authorization:
+                            `Bearer ${getToken()}`
                     }
                 }
             );
 
-            const data = await getResponseData(response);
+            const data =
+                await getResponseData(response);
 
             if (!response.ok) {
                 showError(
                     data.message ||
                     "Unable to get education details."
                 );
+
                 return;
             }
 
@@ -326,8 +473,12 @@ document
             document.getElementById("deg_name").value =
                 data.degreeName || "";
 
-            document.getElementById("feildOfStudy").value =
-                data.fieldOfStudy || data.feildOfStudy || "";
+            document.getElementById(
+                "feildOfStudy"
+            ).value =
+                data.fieldOfStudy ||
+                data.feildOfStudy ||
+                "";
 
             document.getElementById("s1").value =
                 data.specialization1 || "";
@@ -348,8 +499,8 @@ document
         event.preventDefault();
 
         const submitButton = event.currentTarget;
-
-        const currentForm = event.target.closest("form");
+        const currentForm =
+            submitButton.closest("form");
 
         if (!currentForm.checkValidity()) {
             currentForm.reportValidity();
@@ -357,37 +508,62 @@ document
         }
 
         const institute =
-            document.getElementById("institute").value.trim();
+            document
+                .getElementById("institute")
+                .value.trim();
 
         const degreeType =
-            document.getElementById("deg_type").value.trim();
+            document
+                .getElementById("deg_type")
+                .value.trim();
 
         const degreeName =
-            document.getElementById("deg_name").value.trim();
+            document
+                .getElementById("deg_name")
+                .value.trim();
 
         const fieldOfStudy =
-            document.getElementById("feildOfStudy").value.trim();
+            document
+                .getElementById("feildOfStudy")
+                .value.trim();
 
         const specialization1 =
-            document.getElementById("s1").value.trim();
+            document
+                .getElementById("s1")
+                .value.trim();
 
         const specialization2 =
-            document.getElementById("s2").value.trim();
+            document
+                .getElementById("s2")
+                .value.trim();
 
         const specialization3 =
-            document.getElementById("s3").value.trim();
+            document
+                .getElementById("s3")
+                .value.trim();
 
-        setButtonLoading(submitButton, true);
+        setButtonLoading(
+            submitButton,
+            true,
+            "Saving..."
+        );
+
+        await waitForNextPaint();
 
         try {
             const response = await fetch(
                 `${domain}/api/doctor/set-education`,
                 {
                     method: "PUT",
+
                     headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${getToken()}`
+                        "Content-Type":
+                            "application/json",
+
+                        Authorization:
+                            `Bearer ${getToken()}`
                     },
+
                     body: JSON.stringify({
                         institute,
                         degreeType,
@@ -400,20 +576,28 @@ document
                 }
             );
 
-            const data = await getResponseData(response);
+            const data =
+                await getResponseData(response);
 
-            if (response.ok) {
-                document.getElementById("tab3").click();
-            } else {
+            if (!response.ok) {
                 showError(
                     data.message ||
                     "Unable to save education details."
                 );
+
+                return;
             }
+
+            document
+                .getElementById("tab3")
+                .click();
         } catch (error) {
             showError(error.message);
         } finally {
-            setButtonLoading(submitButton, false);
+            setButtonLoading(
+                submitButton,
+                false
+            );
         }
     });
 
@@ -424,15 +608,20 @@ document
 const createExperienceFields = (experience = {}) => {
     experienceCount++;
 
-    const experienceBlock = document.createElement("span");
+    const experienceBlock =
+        document.createElement("span");
 
-    experienceBlock.id = `exp_${experienceCount}`;
-    experienceBlock.className = "experience-entry";
+    experienceBlock.id =
+        `exp_${experienceCount}`;
+
+    experienceBlock.className =
+        "experience-entry";
 
     experienceBlock.innerHTML = `
         <div>
             <label for="exp_facility_${experienceCount}">
                 Facility Name:
+
                 <input
                     type="text"
                     id="exp_facility_${experienceCount}"
@@ -445,6 +634,7 @@ const createExperienceFields = (experience = {}) => {
 
             <label for="exp_designation_${experienceCount}">
                 Designation:
+
                 <input
                     type="text"
                     id="exp_designation_${experienceCount}"
@@ -461,22 +651,28 @@ const createExperienceFields = (experience = {}) => {
         <div>
             <label for="start_${experienceCount}">
                 Start Date:
+
                 <input
                     type="date"
                     id="start_${experienceCount}"
                     name="start_${experienceCount}"
-                    value="${formatDateForInput(experience.startDate)}"
+                    value="${formatDateForInput(
+                        experience.startDate
+                    )}"
                     required
                 >
             </label>
 
             <label for="end_${experienceCount}">
                 End Date:
+
                 <input
                     type="date"
                     id="end_${experienceCount}"
                     name="end_${experienceCount}"
-                    value="${formatDateForInput(experience.endDate)}"
+                    value="${formatDateForInput(
+                        experience.endDate
+                    )}"
                     required
                 >
             </label>
@@ -495,7 +691,8 @@ const createExperienceFields = (experience = {}) => {
         <br>
     `;
 
-    const buttonContainer = addExperienceButton.parentElement;
+    const buttonContainer =
+        addExperienceButton.parentElement;
 
     experienceForm.insertBefore(
         experienceBlock,
@@ -503,27 +700,36 @@ const createExperienceFields = (experience = {}) => {
     );
 };
 
-addExperienceButton.addEventListener("click", (event) => {
-    event.preventDefault();
-    createExperienceFields();
-});
-
-experienceForm.addEventListener("click", (event) => {
-    const deleteButton = event.target.closest(".delBtn");
-
-    if (!deleteButton) {
-        return;
+addExperienceButton.addEventListener(
+    "click",
+    (event) => {
+        event.preventDefault();
+        createExperienceFields();
     }
+);
 
-    event.preventDefault();
+experienceForm.addEventListener(
+    "click",
+    (event) => {
+        const deleteButton =
+            event.target.closest(".delBtn");
 
-    const experienceBlock =
-        deleteButton.closest(".experience-entry");
+        if (!deleteButton) {
+            return;
+        }
 
-    if (experienceBlock) {
-        experienceBlock.remove();
+        event.preventDefault();
+
+        const experienceBlock =
+            deleteButton.closest(
+                ".experience-entry"
+            );
+
+        if (experienceBlock) {
+            experienceBlock.remove();
+        }
     }
-});
+);
 
 document
     .getElementById("experiance")
@@ -537,14 +743,17 @@ document
                 `${domain}/api/doctor/getexperience`,
                 {
                     method: "GET",
+
                     headers: {
-                        Authorization: `Bearer ${getToken()}`
+                        Authorization:
+                            `Bearer ${getToken()}`
                     }
                 }
             );
 
             /*
-             * Read the complete backend response:
+             * Experience response:
+             *
              * {
              *     status: "SUCCESS",
              *     data: [...]
@@ -557,145 +766,201 @@ document
                     result.message ||
                     "Unable to get experience details."
                 );
+
                 return;
             }
 
-            /*
-             * The backend sends experiences directly
-             * inside result.data.
-             */
-            const experiences = Array.isArray(result.data)
-                ? result.data
-                : [];
+            const experiences =
+                Array.isArray(result.data)
+                    ? result.data
+                    : [];
 
             if (experiences.length === 0) {
                 experiencesLoaded = true;
                 return;
             }
 
-            /*
-             * Put the first experience into the fields
-             * already present in the HTML.
-             */
-            const firstExperience = experiences[0];
+            const firstExperience =
+                experiences[0];
 
-            document.getElementById("exp_facility_1").value =
+            document.getElementById(
+                "exp_facility_1"
+            ).value =
                 firstExperience.facilityName || "";
 
-            document.getElementById("exp_designation_1").value =
+            document.getElementById(
+                "exp_designation_1"
+            ).value =
                 firstExperience.designation || "";
 
-            document.getElementById("start_1").value =
-                formatDateForInput(firstExperience.startDate);
+            document.getElementById(
+                "start_1"
+            ).value =
+                formatDateForInput(
+                    firstExperience.startDate
+                );
 
-            document.getElementById("end_1").value =
-                formatDateForInput(firstExperience.endDate);
+            document.getElementById(
+                "end_1"
+            ).value =
+                formatDateForInput(
+                    firstExperience.endDate
+                );
 
-            /*
-             * Create fields for the remaining experiences.
-             */
-            experiences.slice(1).forEach((experience) => {
-                createExperienceFields(experience);
-            });
+            experiences
+                .slice(1)
+                .forEach((experience) => {
+                    createExperienceFields(
+                        experience
+                    );
+                });
 
             experiencesLoaded = true;
         } catch (error) {
             showError(error.message);
         }
     });
-experienceForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
 
-    if (!experienceForm.checkValidity()) {
-        experienceForm.reportValidity();
-        return;
-    }
+experienceForm.addEventListener(
+    "submit",
+    async (event) => {
+        event.preventDefault();
 
-    const submitButton =
-        event.submitter || experienceForm.querySelector('[type="submit"]');
+        if (!experienceForm.checkValidity()) {
+            experienceForm.reportValidity();
+            return;
+        }
 
-    const experiences = [];
+        const submitButton =
+            event.submitter ||
+            experienceForm.querySelector(
+                '[type="submit"]'
+            );
 
-    /*
-     * Read the first experience, which already exists in HTML.
-     */
-    experiences.push({
-        facilityName:
-            document.getElementById("exp_facility_1").value.trim(),
+        const experiences = [];
 
-        designation:
-            document.getElementById("exp_designation_1").value.trim(),
-
-        startDate:
-            document.getElementById("start_1").value,
-
-        endDate:
-            document.getElementById("end_1").value
-    });
-
-    /*
-     * Read dynamically created experiences.
-     */
-    experienceForm
-        .querySelectorAll(".experience-entry")
-        .forEach((block) => {
-            const number = block.id.replace("exp_", "");
-
-            experiences.push({
-                facilityName: document
-                    .getElementById(`exp_facility_${number}`)
+        experiences.push({
+            facilityName:
+                document
+                    .getElementById(
+                        "exp_facility_1"
+                    )
                     .value.trim(),
 
-                designation: document
-                    .getElementById(`exp_designation_${number}`)
+            designation:
+                document
+                    .getElementById(
+                        "exp_designation_1"
+                    )
                     .value.trim(),
 
-                startDate:
-                    document.getElementById(`start_${number}`).value,
+            startDate:
+                document.getElementById(
+                    "start_1"
+                ).value,
 
-                endDate:
-                    document.getElementById(`end_${number}`).value
-            });
+            endDate:
+                document.getElementById(
+                    "end_1"
+                ).value
         });
 
-    setButtonLoading(submitButton, true);
+        experienceForm
+            .querySelectorAll(
+                ".experience-entry"
+            )
+            .forEach((block) => {
+                const number =
+                    block.id.replace(
+                        "exp_",
+                        ""
+                    );
 
-    try {
-        const response = await fetch(
-            `${domain}/api/doctor/addexperience`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${getToken()}`
-                },
-                body: JSON.stringify({
-                    experiences
-                })
-            }
+                experiences.push({
+                    facilityName:
+                        document
+                            .getElementById(
+                                `exp_facility_${number}`
+                            )
+                            .value.trim(),
+
+                    designation:
+                        document
+                            .getElementById(
+                                `exp_designation_${number}`
+                            )
+                            .value.trim(),
+
+                    startDate:
+                        document.getElementById(
+                            `start_${number}`
+                        ).value,
+
+                    endDate:
+                        document.getElementById(
+                            `end_${number}`
+                        ).value
+                });
+            });
+
+        setButtonLoading(
+            submitButton,
+            true,
+            "Saving..."
         );
 
-        const data = await getResponseData(response);
+        await waitForNextPaint();
 
-        if (response.ok) {
+        try {
+            const response = await fetch(
+                `${domain}/api/doctor/addexperience`,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+
+                        Authorization:
+                            `Bearer ${getToken()}`
+                    },
+
+                    body: JSON.stringify({
+                        experiences
+                    })
+                }
+            );
+
+            const data =
+                await getResponseData(response);
+
+            if (!response.ok) {
+                showError(
+                    data.message ||
+                    "Unable to save experience details."
+                );
+
+                return;
+            }
+
             alert(
                 data.message ||
                 "Experience details saved successfully."
             );
 
-            document.getElementById("tab4").click();
-        } else {
-            showError(
-                data.message ||
-                "Unable to save experience details."
+            document
+                .getElementById("tab4")
+                .click();
+        } catch (error) {
+            showError(error.message);
+        } finally {
+            setButtonLoading(
+                submitButton,
+                false
             );
         }
-    } catch (error) {
-        showError(error.message);
-    } finally {
-        setButtonLoading(submitButton, false);
     }
-});
+);
 
 /* =========================
    OPERATIONAL DETAILS
@@ -709,19 +974,23 @@ document
                 `${domain}/api/doctor/get-operationalDetails`,
                 {
                     method: "GET",
+
                     headers: {
-                        Authorization: `Bearer ${getToken()}`
+                        Authorization:
+                            `Bearer ${getToken()}`
                     }
                 }
             );
 
-            const data = await getResponseData(response);
+            const data =
+                await getResponseData(response);
 
             if (!response.ok) {
                 showError(
                     data.message ||
                     "Unable to get operational details."
                 );
+
                 return;
             }
 
@@ -734,14 +1003,22 @@ document
             document.getElementById("e_cap").value =
                 data.eveningCapacity ?? "";
 
-            const holiday = String(data.holidays || "");
+            const holiday = String(
+                data.holidays || ""
+            );
 
             document
-                .querySelectorAll('input[name="holiday"]')
-                .forEach((checkbox, index) => {
-                    checkbox.checked =
-                        holiday.includes(String(index + 1));
-                });
+                .querySelectorAll(
+                    'input[name="holiday"]'
+                )
+                .forEach(
+                    (checkbox, index) => {
+                        checkbox.checked =
+                            holiday.includes(
+                                String(index + 1)
+                            );
+                    }
+                );
         } catch (error) {
             showError(error.message);
         }
@@ -753,22 +1030,25 @@ document
         event.preventDefault();
 
         const submitButton = event.currentTarget;
-
-        const currentForm = event.target.closest("form");
+        const currentForm =
+            submitButton.closest("form");
 
         if (!currentForm.checkValidity()) {
             currentForm.reportValidity();
             return;
         }
 
-        const morningCapacity =
-            Number(document.getElementById("m_cap").value);
+        const morningCapacity = Number(
+            document.getElementById("m_cap").value
+        );
 
-        const afternoonCapacity =
-            Number(document.getElementById("a_cap").value);
+        const afternoonCapacity = Number(
+            document.getElementById("a_cap").value
+        );
 
-        const eveningCapacity =
-            Number(document.getElementById("e_cap").value);
+        const eveningCapacity = Number(
+            document.getElementById("e_cap").value
+        );
 
         const dayMap = {
             Monday: "1",
@@ -783,29 +1063,41 @@ document
         let holidayValue = "";
 
         document
-            .querySelectorAll('input[name="holiday"]:checked')
+            .querySelectorAll(
+                'input[name="holiday"]:checked'
+            )
             .forEach((checkbox) => {
-                holidayValue += dayMap[checkbox.value];
+                holidayValue +=
+                    dayMap[checkbox.value];
             });
 
-        /*
-         * If no holiday is selected, send 0.
-         * Monday + Tuesday + Wednesday becomes 123.
-         */
         const holidays =
-            holidayValue === "" ? 0 : Number(holidayValue);
+            holidayValue === ""
+                ? 0
+                : Number(holidayValue);
 
-        setButtonLoading(submitButton, true);
+        setButtonLoading(
+            submitButton,
+            true,
+            "Saving..."
+        );
+
+        await waitForNextPaint();
 
         try {
             const response = await fetch(
                 `${domain}/api/doctor/set-operationalDetails`,
                 {
                     method: "PUT",
+
                     headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${getToken()}`
+                        "Content-Type":
+                            "application/json",
+
+                        Authorization:
+                            `Bearer ${getToken()}`
                     },
+
                     body: JSON.stringify({
                         morningCapacity,
                         afternoonCapacity,
@@ -815,20 +1107,28 @@ document
                 }
             );
 
-            const data = await getResponseData(response);
+            const data =
+                await getResponseData(response);
 
-            if (response.ok) {
-                document.getElementById("tab5").click();
-            } else {
+            if (!response.ok) {
                 showError(
                     data.message ||
                     "Unable to save operational details."
                 );
+
+                return;
             }
+
+            document
+                .getElementById("tab5")
+                .click();
         } catch (error) {
             showError(error.message);
         } finally {
-            setButtonLoading(submitButton, false);
+            setButtonLoading(
+                submitButton,
+                false
+            );
         }
     });
 
@@ -844,31 +1144,40 @@ document
                 `${domain}/api/doctor/get-about`,
                 {
                     method: "GET",
+
                     headers: {
-                        Authorization: `Bearer ${getToken()}`
+                        Authorization:
+                            `Bearer ${getToken()}`
                     }
                 }
             );
 
-            const data = await getResponseData(response);
+            const data =
+                await getResponseData(response);
 
             if (!response.ok) {
                 showError(
                     data.message ||
                     "Unable to get profile details."
                 );
+
                 return;
             }
 
-            document.getElementById("designation").value =
+            document.getElementById(
+                "designation"
+            ).value =
                 data.designation || "";
 
-            document.getElementById("desc").value =
+            document.getElementById(
+                "desc"
+            ).value =
                 data.about || "";
 
             /*
-             * A file input cannot be filled programmatically.
-             * Show the existing image using its URL instead.
+             * File inputs cannot be populated using
+             * JavaScript. Display the existing photo
+             * through the image element instead.
              */
             if (data.photo) {
                 profilePic.src = data.photo;
@@ -884,8 +1193,8 @@ document
         event.preventDefault();
 
         const submitButton = event.currentTarget;
-
-        const currentForm = event.target.closest("form");
+        const currentForm =
+            submitButton.closest("form");
 
         if (!currentForm.checkValidity()) {
             currentForm.reportValidity();
@@ -893,51 +1202,84 @@ document
         }
 
         const designation =
-            document.getElementById("designation").value.trim();
+            document
+                .getElementById("designation")
+                .value.trim();
 
-        const description =
-            document.getElementById("desc").value.trim();
+        const about =
+            document
+                .getElementById("desc")
+                .value.trim();
 
         const profileFile =
-            document.getElementById("pfp").files[0];
+            document
+                .getElementById("pfp")
+                .files[0];
 
         const formData = new FormData();
 
-        formData.append("designation", designation);
-        formData.append("about", description);
+        formData.append(
+            "designation",
+            designation
+        );
+
+        formData.append(
+            "about",
+            about
+        );
 
         if (profileFile) {
-            formData.append("photo", profileFile);
+            formData.append(
+                "photo",
+                profileFile
+            );
         }
 
-        setButtonLoading(submitButton, true);
+        setButtonLoading(
+            submitButton,
+            true,
+            "Saving..."
+        );
+
+        await waitForNextPaint();
 
         try {
             const response = await fetch(
                 `${domain}/api/doctor/set-about`,
                 {
                     method: "PUT",
+
                     headers: {
-                        Authorization: `Bearer ${getToken()}`
+                        Authorization:
+                            `Bearer ${getToken()}`
                     },
+
                     body: formData
                 }
             );
 
-            const data = await getResponseData(response);
+            const data =
+                await getResponseData(response);
 
-            if (response.ok) {
-                document.getElementById("tab6").click();
-            } else {
+            if (!response.ok) {
                 showError(
                     data.message ||
                     "Unable to save profile details."
                 );
+
+                return;
             }
+
+            document
+                .getElementById("tab6")
+                .click();
         } catch (error) {
             showError(error.message);
         } finally {
-            setButtonLoading(submitButton, false);
+            setButtonLoading(
+                submitButton,
+                false
+            );
         }
     });
 
@@ -951,8 +1293,8 @@ document
         event.preventDefault();
 
         const submitButton = event.currentTarget;
-
-        const currentForm = event.target.closest("form");
+        const currentForm =
+            submitButton.closest("form");
 
         if (!currentForm.checkValidity()) {
             currentForm.reportValidity();
@@ -960,89 +1302,154 @@ document
         }
 
         const governmentId =
-            document.getElementById("governmentId").files[0];
+            document
+                .getElementById("governmentId")
+                .files[0];
 
         const medicalCertificate =
-            document.getElementById("medicalCertificate").files[0];
+            document
+                .getElementById(
+                    "medicalCertificate"
+                )
+                .files[0];
 
-        if (!governmentId || !medicalCertificate) {
-            showError("Please upload both documents.");
+        if (
+            !governmentId ||
+            !medicalCertificate
+        ) {
+            showError(
+                "Please upload both documents."
+            );
+
             return;
         }
 
-        const medicalCertForm = new FormData();
-        const govtIDForm = new FormData();
+        const medicalCertForm =
+            new FormData();
 
-        medicalCertForm.append("file", medicalCertificate);
-        medicalCertForm.append("title", "Medical Certificate");
-        medicalCertForm.append("isPublic", "true");
+        medicalCertForm.append(
+            "file",
+            medicalCertificate
+        );
 
-        govtIDForm.append("file", governmentId);
-        govtIDForm.append("title", "Government ID");
-        govtIDForm.append("isPublic", "true");
+        medicalCertForm.append(
+            "title",
+            "Medical Certificate"
+        );
 
-        setButtonLoading(submitButton, true, "Uploading...");
+        medicalCertForm.append(
+            "isPublic",
+            "true"
+        );
+
+        const governmentIdForm =
+            new FormData();
+
+        governmentIdForm.append(
+            "file",
+            governmentId
+        );
+
+        governmentIdForm.append(
+            "title",
+            "Government ID"
+        );
+
+        governmentIdForm.append(
+            "isPublic",
+            "true"
+        );
+
+        setButtonLoading(
+            submitButton,
+            true,
+            "Uploading..."
+        );
+
+        await waitForNextPaint();
 
         try {
-            const response = await fetch(`${domain}/api/doctor/upload-document`, {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${getToken()}`
-                },
-                body: medicalCertForm
-            });
+            /*
+             * Upload the medical certificate.
+             */
+            const medicalResponse = await fetch(
+                `${domain}/api/doctor/upload-document`,
+                {
+                    method: "POST",
 
-            const data = await getResponseData(response);
+                    headers: {
+                        Authorization:
+                            `Bearer ${getToken()}`
+                    },
 
-            if (response.ok) {
-                alert(
-                    data.message ||
-                    "Document uploaded. Please wait while your credentials are verified."
+                    body: medicalCertForm
+                }
+            );
+
+            const medicalData =
+                await getResponseData(
+                    medicalResponse
                 );
-            } else {
+
+            if (!medicalResponse.ok) {
                 showError(
-                    data.message ||
-                    "Unable to upload documents."
+                    medicalData.message ||
+                    "Unable to upload medical certificate."
                 );
+
+                return;
             }
-        } catch (error) {
-            showError(error.message);
-        }
 
-        try {
-            const response = await fetch(`${domain}/api/doctor/upload-document`, {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${getToken()}`
-                },
-                body: govtIDForm
-            });
+            /*
+             * Upload the government ID.
+             */
+            const governmentResponse =
+                await fetch(
+                    `${domain}/api/doctor/upload-document`,
+                    {
+                        method: "POST",
 
-            const data = await getResponseData(response);
+                        headers: {
+                            Authorization:
+                                `Bearer ${getToken()}`
+                        },
 
-            if (response.ok) {
-                alert(
-                    data.message ||
-                    "Document uploaded. Please wait while your credentials are verified."
+                        body: governmentIdForm
+                    }
                 );
-            } else {
+
+            const governmentData =
+                await getResponseData(
+                    governmentResponse
+                );
+
+            if (!governmentResponse.ok) {
                 showError(
-                    data.message ||
-                    "Unable to upload documents."
+                    governmentData.message ||
+                    "Unable to upload government ID."
                 );
+
+                return;
             }
+
+            alert(
+                governmentData.message ||
+                medicalData.message ||
+                "Documents uploaded successfully. Please wait while your credentials are verified."
+            );
         } catch (error) {
             showError(error.message);
         } finally {
-            setButtonLoading(submitButton, false);
+            setButtonLoading(
+                submitButton,
+                false
+            );
         }
     });
 
-    
-
 /*
- * Show the first panel only after all panelactive event
- * listeners have been registered.
+ * Show the first panel only after all panelactive
+ * event listeners have been registered.
  */
 if (tabPanels.length > 0) {
     showPanel(tabPanels[0]);
