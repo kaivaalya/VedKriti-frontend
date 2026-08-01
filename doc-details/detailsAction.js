@@ -852,14 +852,14 @@ document
                 data.designation || "";
 
             document.getElementById("desc").value =
-                data.about || data.description || "";
+                data.about || "";
 
             /*
              * A file input cannot be filled programmatically.
              * Show the existing image using its URL instead.
              */
-            if (data.photo || data.dphoto) {
-                profilePic.src = data.photo || data.dphoto;
+            if (data.photo) {
+                profilePic.src = data.photo;
             }
         } catch (error) {
             showError(error.message);
@@ -892,7 +892,7 @@ document
         const formData = new FormData();
 
         formData.append("designation", designation);
-        formData.append("description", description);
+        formData.append("about", description);
 
         if (profileFile) {
             formData.append("photo", profileFile);
