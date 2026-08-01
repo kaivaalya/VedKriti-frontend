@@ -528,10 +528,6 @@ experienceForm.addEventListener("click", (event) => {
 document
     .getElementById("experiance")
     .addEventListener("panelactive", async () => {
-        /*
-         * Prevent the experiences from being added repeatedly
-         * whenever the user changes tabs.
-         */
         if (experiencesLoaded) {
             return;
         }
@@ -547,50 +543,66 @@ document
                 }
             );
 
-            const data = await getResponseData(response);
+            /*
+             * Read the complete backend response:
+             * {
+             *     status: "SUCCESS",
+             *     data: [...]
+             * }
+             */
+            const result = await response.json();
 
             if (!response.ok) {
                 showError(
-                    data.message ||
+                    result.message ||
                     "Unable to get experience details."
                 );
                 return;
             }
 
-            const experiences = Array.isArray(data)
-                ? data
+            /*
+             * The backend sends experiences directly
+             * inside result.data.
+             */
+            const experiences = Array.isArray(result.data)
+                ? result.data
                 : [];
 
-            /*
-             * Put the first returned experience in the existing
-             * HTML fields.
-             */
-            if (experiences.length > 0) {
-                const firstExperience = experiences[0];
-
-                document.getElementById("exp_facility_1").value =
-                    firstExperience.facilityName || "";
-
-                document.getElementById("exp_designation_1").value =
-                    firstExperience.designation || "";
-
-                document.getElementById("start_1").value =
-                    formatDateForInput(firstExperience.startDate);
-
-                document.getElementById("end_1").value =
-                    formatDateForInput(firstExperience.endDate);
-
-                experiences.slice(1).forEach((experience) => {
-                    createExperienceFields(experience);
-                });
+            if (experiences.length === 0) {
+                experiencesLoaded = true;
+                return;
             }
+
+            /*
+             * Put the first experience into the fields
+             * already present in the HTML.
+             */
+            const firstExperience = experiences[0];
+
+            document.getElementById("exp_facility_1").value =
+                firstExperience.facilityName || "";
+
+            document.getElementById("exp_designation_1").value =
+                firstExperience.designation || "";
+
+            document.getElementById("start_1").value =
+                formatDateForInput(firstExperience.startDate);
+
+            document.getElementById("end_1").value =
+                formatDateForInput(firstExperience.endDate);
+
+            /*
+             * Create fields for the remaining experiences.
+             */
+            experiences.slice(1).forEach((experience) => {
+                createExperienceFields(experience);
+            });
 
             experiencesLoaded = true;
         } catch (error) {
             showError(error.message);
         }
     });
-
 experienceForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
