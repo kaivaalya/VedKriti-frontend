@@ -984,7 +984,7 @@ document
         setButtonLoading(submitButton, true, "Uploading...");
 
         try {
-            const response = await fetch(`${domain}/api/doctor/set-records`, {
+            const response = await fetch(`${domain}/api/doctor/upload-document`, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${getToken()}`
@@ -1010,7 +1010,7 @@ document
         }
 
         try {
-            const response = await fetch(`${domain}/api/doctor/set-records`, {
+            const response = await fetch(`${domain}/api/doctor/upload-document`, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${getToken()}`
