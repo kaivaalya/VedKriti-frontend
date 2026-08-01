@@ -9,7 +9,7 @@ const ENDPOINTS = {
         `${domain}/api/admin/statistics`,
 
     findDoctors:
-        `${domain}/api/doctors/find-doctor`,
+        `${domain}/api/doctor/find-doctor`,
 
     removeDoctor: (doctorId) =>
         `${domain}/api/admin/doctors/${
