@@ -608,7 +608,7 @@ document
     .addEventListener("panelactive", async () => {
         try {
             const response = await fetch(
-                `${domain}/api/doctor/set-operationalDetails`,
+                `${domain}/api/doctor/get-operationalDetails`,
                 {
                     method: "GET",
                     headers: {
