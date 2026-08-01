@@ -30,11 +30,78 @@ const showError = (message) => {
 
 const getResponseData = async (response) => {
     try {
-        return await response.json();
+        const json = await response.json();
+        const responseData = json?.data;
+
+        /*
+         * The backend sends the actual response fields inside `data`.
+         * Keep root-level fields such as `message`, while exposing the
+         * nested fields directly to the rest of this file.
+         */
+        if (
+            responseData &&
+            typeof responseData === "object" &&
+            !Array.isArray(responseData)
+        ) {
+            return {
+                ...json,
+                ...responseData
+            };
+        }
+
+        return json || {};
     } catch {
         return {};
     }
 };
+
+const setButtonLoading = (button, isLoading, loadingText = "Saving...") => {
+    if (!button) {
+        return;
+    }
+
+    if (isLoading) {
+        button.dataset.originalContent = button.innerHTML;
+        button.disabled = true;
+        button.setAttribute("aria-busy", "true");
+        button.innerHTML = `
+            <span
+                aria-hidden="true"
+                style="
+                    display:inline-block;
+                    width:0.9em;
+                    height:0.9em;
+                    margin-right:0.5em;
+                    border:2px solid currentColor;
+                    border-right-color:transparent;
+                    border-radius:50%;
+                    vertical-align:-0.12em;
+                    animation:submit-button-spin 0.7s linear infinite;
+                "
+            ></span>${loadingText}
+        `;
+        return;
+    }
+
+    button.disabled = false;
+    button.removeAttribute("aria-busy");
+
+    if (button.dataset.originalContent !== undefined) {
+        button.innerHTML = button.dataset.originalContent;
+        delete button.dataset.originalContent;
+    }
+};
+
+if (!document.getElementById("submit-button-loader-style")) {
+    const loaderStyle = document.createElement("style");
+    loaderStyle.id = "submit-button-loader-style";
+    loaderStyle.textContent = `
+        @keyframes submit-button-spin {
+            to { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(loaderStyle);
+}
 
 const formatDateForInput = (date) => {
     if (!date) {
@@ -152,6 +219,8 @@ document
     .addEventListener("click", async (event) => {
         event.preventDefault();
 
+        const submitButton = event.currentTarget;
+
         const currentForm = event.target.closest("form");
 
         if (!currentForm.checkValidity()) {
@@ -179,6 +248,8 @@ document
 
         const consultationFee =
             document.getElementById("fee").value;
+
+        setButtonLoading(submitButton, true);
 
         try {
             const response = await fetch(
@@ -213,6 +284,8 @@ document
             }
         } catch (error) {
             showError(error.message);
+        } finally {
+            setButtonLoading(submitButton, false);
         }
     });
 
@@ -274,6 +347,8 @@ document
     .addEventListener("click", async (event) => {
         event.preventDefault();
 
+        const submitButton = event.currentTarget;
+
         const currentForm = event.target.closest("form");
 
         if (!currentForm.checkValidity()) {
@@ -301,6 +376,8 @@ document
 
         const specialization3 =
             document.getElementById("s3").value.trim();
+
+        setButtonLoading(submitButton, true);
 
         try {
             const response = await fetch(
@@ -335,6 +412,8 @@ document
             }
         } catch (error) {
             showError(error.message);
+        } finally {
+            setButtonLoading(submitButton, false);
         }
     });
 
@@ -520,6 +599,9 @@ experienceForm.addEventListener("submit", async (event) => {
         return;
     }
 
+    const submitButton =
+        event.submitter || experienceForm.querySelector('[type="submit"]');
+
     const experiences = [];
 
     /*
@@ -564,6 +646,8 @@ experienceForm.addEventListener("submit", async (event) => {
             });
         });
 
+    setButtonLoading(submitButton, true);
+
     try {
         const response = await fetch(
             `${domain}/api/doctor/addexperience`,
@@ -596,6 +680,8 @@ experienceForm.addEventListener("submit", async (event) => {
         }
     } catch (error) {
         showError(error.message);
+    } finally {
+        setButtonLoading(submitButton, false);
     }
 });
 
@@ -628,15 +714,15 @@ document
             }
 
             document.getElementById("m_cap").value =
-                data.data.morningCapacity ?? "";
+                data.morningCapacity ?? "";
 
             document.getElementById("a_cap").value =
-                data.data.afternoonCapacity ?? "";
+                data.afternoonCapacity ?? "";
 
             document.getElementById("e_cap").value =
-                data.data.eveningCapacity ?? "";
+                data.eveningCapacity ?? "";
 
-            const holiday = String(data.data.holidays || "");
+            const holiday = String(data.holidays || "");
 
             document
                 .querySelectorAll('input[name="holiday"]')
@@ -653,6 +739,8 @@ document
     .getElementById("btnOps")
     .addEventListener("click", async (event) => {
         event.preventDefault();
+
+        const submitButton = event.currentTarget;
 
         const currentForm = event.target.closest("form");
 
@@ -695,6 +783,8 @@ document
         const holidays =
             holidayValue === "" ? 0 : Number(holidayValue);
 
+        setButtonLoading(submitButton, true);
+
         try {
             const response = await fetch(
                 `${domain}/api/doctor/set-operationalDetails`,
@@ -725,6 +815,8 @@ document
             }
         } catch (error) {
             showError(error.message);
+        } finally {
+            setButtonLoading(submitButton, false);
         }
     });
 
@@ -779,6 +871,8 @@ document
     .addEventListener("click", async (event) => {
         event.preventDefault();
 
+        const submitButton = event.currentTarget;
+
         const currentForm = event.target.closest("form");
 
         if (!currentForm.checkValidity()) {
@@ -804,6 +898,8 @@ document
             formData.append("photo", profileFile);
         }
 
+        setButtonLoading(submitButton, true);
+
         try {
             const response = await fetch(
                 `${domain}/api/doctor/set-about`,
@@ -828,6 +924,8 @@ document
             }
         } catch (error) {
             showError(error.message);
+        } finally {
+            setButtonLoading(submitButton, false);
         }
     });
 
@@ -839,6 +937,8 @@ document
     .getElementById("btnRecords")
     .addEventListener("click", async (event) => {
         event.preventDefault();
+
+        const submitButton = event.currentTarget;
 
         const currentForm = event.target.closest("form");
 
@@ -865,6 +965,8 @@ document
             "medicalCertificate",
             medicalCertificate
         );
+
+        setButtonLoading(submitButton, true, "Uploading...");
 
         try {
             const response = await fetch(
@@ -930,6 +1032,8 @@ document
             }
         } catch (error) {
             showError(error.message);
+        } finally {
+            setButtonLoading(submitButton, false);
         }
     });
 
