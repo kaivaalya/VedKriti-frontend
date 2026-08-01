@@ -149,7 +149,7 @@ form.addEventListener("submit", async (event) => {
     try {
         const response = await fetch(`${domain}${endpoint}`, {
             method: "POST",
-
+            credentials: "include",
             headers: {
                 "Content-Type": "application/json",
             },
