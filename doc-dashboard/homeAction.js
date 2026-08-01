@@ -1,9 +1,14 @@
 import { domain } from "../config.js";
 
+/*
+ * Change these paths if your backend uses different routes.
+ */
 const ENDPOINTS = {
-    search: `${domain}/api/booking/doctor-booking`,//set
-    today: `${domain}/api/booking/doctor-booking/date?=${getTodayDate}`,//set
-    availability: `${domain}/api/doctor/availability`,
+    search:
+        `${domain}/api/booking/doctor-booking/date`,
+
+    today:
+        `${domain}/api/booking/doctor-booking/date`,
 
     emergencyCancel:
         `${domain}/api/doctor/consultations/emergency-cancel`,
@@ -24,23 +29,33 @@ const ENDPOINTS = {
         }/conference-credentials`
 };
 
-/* ---------------- Helper functions ---------------- */
+/* =========================================================
+   HELPERS
+========================================================= */
 
-const $ = (selector, parent = document) =>
-    parent.querySelector(selector);
+const $ = (
+    selector,
+    parent = document
+) => parent.querySelector(selector);
 
-const $$ = (selector, parent = document) =>
-    [...parent.querySelectorAll(selector)];
+const $$ = (
+    selector,
+    parent = document
+) => [...parent.querySelectorAll(selector)];
 
-const token = () =>
+const getToken = () =>
     localStorage.getItem("token") || "";
 
-const authHeaders = (json = false) => ({
-    Authorization: `Bearer ${token()}`,
+const authHeaders = (
+    includeJSON = false
+) => ({
+    Authorization:
+        `Bearer ${getToken()}`,
 
-    ...(json
+    ...(includeJSON
         ? {
-            "Content-Type": "application/json"
+            "Content-Type":
+                "application/json"
         }
         : {})
 });
@@ -54,10 +69,12 @@ const escapeHTML = (value) =>
         .replaceAll("'", "&#039;");
 
 const readJSON = async (response) => {
-    const type =
+    const contentType =
         response.headers.get("content-type") || "";
 
-    if (!type.includes("application/json")) {
+    if (
+        !contentType.includes("application/json")
+    ) {
         throw new Error(
             "The server returned an invalid response."
         );
@@ -66,22 +83,31 @@ const readJSON = async (response) => {
     return response.json();
 };
 
-const extractArray = (data, keys) => {
-    if (Array.isArray(data)) {
-        return data;
+const extractArray = (
+    responseData,
+    possibleKeys
+) => {
+    if (Array.isArray(responseData)) {
+        return responseData;
     }
 
-    if (Array.isArray(data?.data)) {
-        return data.data;
+    if (Array.isArray(responseData?.data)) {
+        return responseData.data;
     }
 
-    for (const key of keys) {
-        if (Array.isArray(data?.[key])) {
-            return data[key];
+    for (const key of possibleKeys) {
+        if (
+            Array.isArray(responseData?.[key])
+        ) {
+            return responseData[key];
         }
 
-        if (Array.isArray(data?.data?.[key])) {
-            return data.data[key];
+        if (
+            Array.isArray(
+                responseData?.data?.[key]
+            )
+        ) {
+            return responseData.data[key];
         }
     }
 
@@ -90,9 +116,13 @@ const extractArray = (data, keys) => {
 
 const setMessage = (
     element,
-    text,
+    text = "",
     state = ""
 ) => {
+    if (!element) {
+        return;
+    }
+
     element.textContent = text;
 
     element.className =
@@ -100,23 +130,27 @@ const setMessage = (
 };
 
 /*
- * Returns today's date in the user's local timezone
- * in YYYY-MM-DD format.
+ * Returns local date instead of UTC date.
  *
- * Do not use toISOString() here because it converts
- * the date and time to UTC.
+ * Example:
+ * 2026-08-01
  */
 const getTodayDate = () => {
-    const now = new Date();
+    const now =
+        new Date();
 
     const year =
         now.getFullYear();
 
     const month =
-        String(now.getMonth() + 1).padStart(2, "0");
+        String(
+            now.getMonth() + 1
+        ).padStart(2, "0");
 
     const day =
-        String(now.getDate()).padStart(2, "0");
+        String(
+            now.getDate()
+        ).padStart(2, "0");
 
     return `${year}-${month}-${day}`;
 };
@@ -126,22 +160,37 @@ const formatDate = (value) => {
         return "Date not provided";
     }
 
-    const date = new Date(
-        `${String(value).slice(0, 10)}T00:00:00`
-    );
+    const dateValue =
+        String(value).slice(0, 10);
 
-    if (Number.isNaN(date.getTime())) {
+    const date =
+        new Date(`${dateValue}T00:00:00`);
+
+    if (
+        Number.isNaN(date.getTime())
+    ) {
         return String(value);
     }
 
-    return date.toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric"
-    });
+    return date.toLocaleDateString(
+        "en-IN",
+        {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        }
+    );
 };
 
-/* ---------------- Element references ---------------- */
+const getBookingId = (booking) =>
+    booking.bookingID ||
+    booking.bookingId ||
+    booking.id ||
+    booking._id;
+
+/* =========================================================
+   ELEMENT REFERENCES
+========================================================= */
 
 const tabContainer =
     $(".tabs-container");
@@ -152,40 +201,50 @@ const panels =
 const todayResults =
     $("#todayResults");
 
+const searchResults =
+    $("#searchResults");
+
 const consultationMessage =
     $("#consultationMessage");
 
-/* ---------------- Tab switching ---------------- */
+const searchMessage =
+    $("#searchMessage");
 
-const openTab = (id) => {
+/* =========================================================
+   TAB SWITCHING
+========================================================= */
+
+const openTab = async (panelId) => {
     panels.forEach((panel) => {
         panel.hidden =
-            panel.id !== id;
+            panel.id !== panelId;
     });
 
-    $$("a", tabContainer).forEach((link) => {
-        const active =
-            link.getAttribute("href") === `#${id}`;
+    $$("a", tabContainer)
+        .forEach((link) => {
+            const active =
+                link.getAttribute("href") ===
+                `#${panelId}`;
 
-        link.classList.toggle(
-            "active-tab",
-            active
-        );
+            link.classList.toggle(
+                "active-tab",
+                active
+            );
 
-        link.setAttribute(
-            "aria-selected",
-            String(active)
-        );
-    });
+            link.setAttribute(
+                "aria-selected",
+                String(active)
+            );
+        });
 
-    if (id === "consultations") {
-        loadTodayConsultations();
+    if (panelId === "consultations") {
+        await loadTodayConsultations();
     }
 };
 
 tabContainer.addEventListener(
     "click",
-    (event) => {
+    async (event) => {
         const link =
             event.target.closest("a");
 
@@ -195,146 +254,161 @@ tabContainer.addEventListener(
 
         event.preventDefault();
 
-        openTab(
-            link.getAttribute("href").slice(1)
-        );
+        const panelId =
+            link
+                .getAttribute("href")
+                .slice(1);
+
+        await openTab(panelId);
     }
 );
 
-/* ---------------- Consultation buttons ---------------- */
+/* =========================================================
+   CONSULTATION ACTION BUTTONS
+========================================================= */
 
 const consultationActions = (booking) => {
-    const id =
-        booking.bookingID ||
-        booking.id ||
-        booking._id;
+    const bookingId =
+        getBookingId(booking);
 
-    const status = String(
-        booking.status || ""
-    ).toUpperCase();
+    const status =
+        String(
+            booking.status || ""
+        ).toUpperCase();
 
-    const type = String(
-        booking.consultationType || "OFFLINE"
-    ).toUpperCase();
+    const consultationType =
+        String(
+            booking.consultationType ||
+            "OFFLINE"
+        ).toUpperCase();
 
-    /*
-     * Waiting-list consultation
-     */
     if (
         status === "WAITING" ||
         status === "WAITLISTED"
     ) {
         return `
             <button
-                class="remove-wl"
                 type="button"
+                class="remove-wl"
                 data-action="remove-waiting"
-                data-booking-id="${escapeHTML(id)}"
+                data-booking-id="${escapeHTML(
+                    bookingId
+                )}"
             >
                 Remove from Waiting List
             </button>
         `;
     }
 
-    /*
-     * Confirmed consultation:
-     * doctor can start it.
-     */
     if (
         status === "CONFIRMED" ||
         status === "BOOKED"
     ) {
         return `
             <button
-                class="start-consultation"
                 type="button"
+                class="start-consultation"
                 data-action="start"
-                data-booking-id="${escapeHTML(id)}"
+                data-booking-id="${escapeHTML(
+                    bookingId
+                )}"
             >
                 Start Consultation
             </button>
         `;
     }
 
-    /*
-     * Active consultation:
-     * doctor can join an online conference
-     * and end the consultation.
-     */
     if (status === "CONSULTING") {
+        const conferenceButton =
+            consultationType === "ONLINE"
+                ? `
+                    <button
+                        type="button"
+                        class="join-conference"
+                        data-action="join"
+                        data-booking-id="${escapeHTML(
+                            bookingId
+                        )}"
+                    >
+                        Join Conference
+                    </button>
+                `
+                : "";
+
         return `
-            ${
-                type === "ONLINE"
-                    ? `
-                        <button
-                            class="join-conference"
-                            type="button"
-                            data-action="join"
-                            data-booking-id="${escapeHTML(id)}"
-                        >
-                            Join Conference
-                        </button>
-                    `
-                    : ""
-            }
+            ${conferenceButton}
 
             <button
-                class="end-consultation"
                 type="button"
+                class="end-consultation"
                 data-action="end"
-                data-booking-id="${escapeHTML(id)}"
+                data-booking-id="${escapeHTML(
+                    bookingId
+                )}"
             >
                 End Consultation
             </button>
         `;
     }
 
-    /*
-     * No buttons for DONE or CANCELLED consultations.
-     */
     return "";
 };
 
-/* ---------------- Consultation card ---------------- */
+/* =========================================================
+   CONSULTATION CARD
+========================================================= */
 
 const consultationCard = (booking) => {
-    const status = String(
-        booking.status || "UNKNOWN"
-    ).toUpperCase();
+    const status =
+        String(
+            booking.status || "UNKNOWN"
+        ).toUpperCase();
+
+    const patientName =
+        booking.patientName ||
+        booking.patName ||
+        booking.patient?.name ||
+        "Patient";
+
+    const slot =
+        booking.slot ||
+        booking.bookingSlot ||
+        booking.shift ||
+        "Slot not provided";
+
+    const tokenNumber =
+        booking.tokenNumber ??
+        booking.token ??
+        "Not assigned";
+
+    const consultationType =
+        booking.consultationType ||
+        "OFFLINE";
+
+    const bookingDate =
+        booking.date ||
+        booking.bookingDate;
 
     return `
         <article class="card">
             <div class="card-content">
                 <h2>
-                    ${escapeHTML(
-                        booking.patientName ||
-                        booking.patient?.name ||
-                        "Patient"
-                    )}
+                    ${escapeHTML(patientName)}
                 </h2>
 
                 <div class="booking-meta">
                     <span>
-                        ${escapeHTML(
-                            booking.slot ||
-                            booking.shift ||
-                            "Slot not provided"
-                        )}
+                        ${escapeHTML(slot)}
                     </span>
 
                     <span>
                         Token:
-                        ${escapeHTML(
-                            booking.tokenNumber ??
-                            booking.token ??
-                            "Not assigned"
-                        )}
+                        ${escapeHTML(tokenNumber)}
                     </span>
 
                     <span>
                         ${escapeHTML(
-                            booking.consultationType ||
-                            "OFFLINE"
+                            consultationType
                         )}
                     </span>
 
@@ -349,10 +423,7 @@ const consultationCard = (booking) => {
 
                 <p class="booking-date">
                     ${escapeHTML(
-                        formatDate(
-                            booking.date ||
-                            booking.bookingDate
-                        )
+                        formatDate(bookingDate)
                     )}
                 </p>
 
@@ -380,11 +451,8 @@ const renderConsultations = (
     container,
     consultations
 ) => {
-    container.innerHTML = consultations.length
-        ? consultations
-            .map(consultationCard)
-            .join("")
-        : `
+    if (!consultations.length) {
+        container.innerHTML = `
             <div class="empty-state">
                 <h2>No consultations found</h2>
 
@@ -393,16 +461,28 @@ const renderConsultations = (
                 </p>
             </div>
         `;
+
+        return;
+    }
+
+    container.innerHTML =
+        consultations
+            .map(consultationCard)
+            .join("");
 };
 
-/* ---------------- Load today's consultations ---------------- */
+/* =========================================================
+   LOAD TODAY'S CONSULTATIONS
+========================================================= */
 
 const loadTodayConsultations = async () => {
     const refreshButton =
         $("#refreshConsultations");
 
-    refreshButton.disabled = true;
+    const today =
+        getTodayDate();
 
+    refreshButton.disabled = true;
     refreshButton.textContent =
         "Loading...";
 
@@ -412,16 +492,14 @@ const loadTodayConsultations = async () => {
     );
 
     try {
-        const today =
-            getTodayDate();
-
         const response = await fetch(
             `${ENDPOINTS.today}?date=${
                 encodeURIComponent(today)
             }`,
             {
                 method: "GET",
-                headers: authHeaders()
+                headers: authHeaders(),
+                credentials: "include"
             }
         );
 
@@ -435,10 +513,14 @@ const loadTodayConsultations = async () => {
             );
         }
 
-        const consultations = extractArray(
-            data,
-            ["consultations", "bookings"]
-        );
+        const consultations =
+            extractArray(
+                data,
+                [
+                    "consultations",
+                    "bookings"
+                ]
+            );
 
         renderConsultations(
             todayResults,
@@ -451,6 +533,11 @@ const loadTodayConsultations = async () => {
             "success"
         );
     } catch (error) {
+        renderConsultations(
+            todayResults,
+            []
+        );
+
         setMessage(
             consultationMessage,
             error.message,
@@ -458,7 +545,6 @@ const loadTodayConsultations = async () => {
         );
     } finally {
         refreshButton.disabled = false;
-
         refreshButton.textContent =
             "Refresh";
     }
@@ -469,35 +555,55 @@ $("#refreshConsultations").addEventListener(
     loadTodayConsultations
 );
 
-/* ---------------- Emergency cancellation ---------------- */
+/* =========================================================
+   EMERGENCY CANCELLATION
+========================================================= */
 
-$("#emergencyCancel").addEventListener(
-    "click",
-    async () => {
+$("#emergencyCancelForm").addEventListener(
+    "submit",
+    async (event) => {
+        event.preventDefault();
+
+        const form =
+            event.currentTarget;
+
+        const button =
+            $("#emergencyCancel");
+
+        const reason =
+            $("#emergencyReason")
+                .value
+                .trim();
+
         const today =
             getTodayDate();
 
+        if (!reason) {
+            setMessage(
+                consultationMessage,
+                "Please enter a cancellation reason.",
+                "error"
+            );
+
+            return;
+        }
+
         const confirmed =
             globalThis.confirm(
-                `Cancel all remaining appointments for ${today}? ` +
-                "This emergency action cannot be undone."
+                `Cancel all remaining consultations for ${today}?`
             );
 
         if (!confirmed) {
             return;
         }
 
-        const button =
-            $("#emergencyCancel");
-
         button.disabled = true;
-
         button.textContent =
             "Cancelling...";
 
         setMessage(
             consultationMessage,
-            "Cancelling today's remaining appointments..."
+            "Cancelling today's remaining consultations..."
         );
 
         try {
@@ -509,9 +615,14 @@ $("#emergencyCancel").addEventListener(
                     headers:
                         authHeaders(true),
 
-                    body: JSON.stringify({
-                        date: today
-                    })
+                    credentials:
+                        "include",
+
+                    body:
+                        JSON.stringify({
+                            reason,
+                            date: today
+                        })
                 }
             );
 
@@ -525,10 +636,12 @@ $("#emergencyCancel").addEventListener(
                 );
             }
 
+            form.reset();
+
             setMessage(
                 consultationMessage,
                 data.message ||
-                "Today's remaining appointments were cancelled.",
+                "Today's remaining consultations were cancelled.",
                 "success"
             );
 
@@ -541,14 +654,111 @@ $("#emergencyCancel").addEventListener(
             );
         } finally {
             button.disabled = false;
-
             button.textContent =
                 "Emergency Cancel Today";
         }
     }
 );
 
-/* ---------------- Consultation action handling ---------------- */
+/* =========================================================
+   SEARCH CONSULTATIONS
+========================================================= */
+
+$("#searchForm").addEventListener(
+    "submit",
+    async (event) => {
+        event.preventDefault();
+
+        const searchButton =
+            $("#search");
+
+        const selectedDate =
+            $("#date").value;
+
+        if (!selectedDate) {
+            setMessage(
+                searchMessage,
+                "Please select a date.",
+                "error"
+            );
+
+            return;
+        }
+
+        searchButton.disabled = true;
+        searchButton.textContent =
+            "Searching...";
+
+        setMessage(
+            searchMessage,
+            "Searching consultations..."
+        );
+
+        try {
+            const response = await fetch(
+                `${ENDPOINTS.search}?date=${
+                    encodeURIComponent(
+                        selectedDate
+                    )
+                }`,
+                {
+                    method: "GET",
+                    headers: authHeaders(),
+                    credentials: "include"
+                }
+            );
+
+            const data =
+                await readJSON(response);
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message ||
+                    "Unable to search consultations."
+                );
+            }
+
+            const consultations =
+                extractArray(
+                    data,
+                    [
+                        "consultations",
+                        "bookings"
+                    ]
+                );
+
+            renderConsultations(
+                searchResults,
+                consultations
+            );
+
+            setMessage(
+                searchMessage,
+                `${consultations.length} result(s) found.`,
+                "success"
+            );
+        } catch (error) {
+            renderConsultations(
+                searchResults,
+                []
+            );
+
+            setMessage(
+                searchMessage,
+                error.message,
+                "error"
+            );
+        } finally {
+            searchButton.disabled = false;
+            searchButton.textContent =
+                "Search";
+        }
+    }
+);
+
+/* =========================================================
+   CONSULTATION ACTIONS
+========================================================= */
 
 todayResults.addEventListener(
     "click",
@@ -587,32 +797,47 @@ todayResults.addEventListener(
             return;
         }
 
-        if (action === "remove-waiting") {
+        if (
+            action === "remove-waiting"
+        ) {
             setMessage(
                 consultationMessage,
-                "Connect this button to your existing waiting-list removal endpoint.",
+                "Connect this button to your waiting-list removal endpoint.",
                 "error"
             );
 
             return;
         }
 
+        if (
+            action !== "start" &&
+            action !== "end"
+        ) {
+            return;
+        }
+
         const isStarting =
             action === "start";
 
-        const endpoint = isStarting
-            ? ENDPOINTS.start(bookingId)
-            : ENDPOINTS.end(bookingId);
+        const endpoint =
+            isStarting
+                ? ENDPOINTS.start(bookingId)
+                : ENDPOINTS.end(bookingId);
 
-        const nextStatus = isStarting
-            ? "CONSULTING"
-            : "DONE";
+        const nextStatus =
+            isStarting
+                ? "CONSULTING"
+                : "DONE";
+
+        const originalText =
+            button.textContent;
 
         button.disabled = true;
 
-        button.textContent = isStarting
-            ? "Starting..."
-            : "Ending...";
+        button.textContent =
+            isStarting
+                ? "Starting..."
+                : "Ending...";
 
         try {
             const response = await fetch(
@@ -623,9 +848,13 @@ todayResults.addEventListener(
                     headers:
                         authHeaders(true),
 
-                    body: JSON.stringify({
-                        status: nextStatus
-                    })
+                    credentials:
+                        "include",
+
+                    body:
+                        JSON.stringify({
+                            status: nextStatus
+                        })
                 }
             );
 
@@ -635,28 +864,17 @@ todayResults.addEventListener(
             if (!response.ok) {
                 throw new Error(
                     data.message ||
-                    `Unable to mark consultation as ${nextStatus}.`
+                    `Unable to update consultation to ${nextStatus}.`
                 );
             }
 
             setMessage(
                 consultationMessage,
                 data.message ||
-                `Consultation status updated to ${nextStatus}.`,
+                `Consultation updated to ${nextStatus}.`,
                 "success"
             );
 
-            /*
-             * Reload the cards so that:
-             *
-             * CONFIRMED -> CONSULTING
-             * Start button -> End button
-             *
-             * or:
-             *
-             * CONSULTING -> DONE
-             * End button -> no action button
-             */
             await loadTodayConsultations();
         } catch (error) {
             setMessage(
@@ -666,31 +884,36 @@ todayResults.addEventListener(
             );
 
             button.disabled = false;
-
-            button.textContent = isStarting
-                ? "Start Consultation"
-                : "End Consultation";
+            button.textContent =
+                originalText;
         }
     }
 );
 
-/* ---------------- Join online conference ---------------- */
+/* =========================================================
+   JOIN ONLINE CONFERENCE
+========================================================= */
 
 const joinConference = async (
     bookingId,
     button
 ) => {
-    button.disabled = true;
+    const originalText =
+        button.textContent;
 
+    button.disabled = true;
     button.textContent =
         "Joining...";
 
     try {
         const response = await fetch(
-            ENDPOINTS.conference(bookingId),
+            ENDPOINTS.conference(
+                bookingId
+            ),
             {
                 method: "GET",
-                headers: authHeaders()
+                headers: authHeaders(),
+                credentials: "include"
             }
         );
 
@@ -715,23 +938,26 @@ const joinConference = async (
             credentials.token ||
             credentials.rtcToken;
 
-        if (!channel || !conferenceToken) {
+        if (
+            !channel ||
+            !conferenceToken
+        ) {
             throw new Error(
                 "The backend did not return a channel and token."
             );
         }
 
-        sessionStorage.setItem(
+        localStorage.setItem(
             "conferenceChannel",
             channel
         );
 
-        sessionStorage.setItem(
+        localStorage.setItem(
             "conferenceToken",
             conferenceToken
         );
 
-        sessionStorage.setItem(
+        localStorage.setItem(
             "currentConsultationBookingId",
             bookingId
         );
@@ -746,176 +972,16 @@ const joinConference = async (
         );
 
         button.disabled = false;
-
         button.textContent =
-            "Join Conference";
+            originalText;
     }
 };
 
-/* ---------------- Search consultations ---------------- */
+/* =========================================================
+   INITIAL PAGE SETUP
+========================================================= */
 
-$("#searchForm").addEventListener(
-    "submit",
-    async (event) => {
-        event.preventDefault();
-
-        const button =
-            $("#search");
-
-        const date =
-            $("#date").value.trim();
-
-        button.disabled = true;
-
-        button.textContent =
-            "Searching...";
-
-        setMessage(
-            $("#searchMessage"),
-            "Searching consultations..."
-        );
-
-        try {
-            const response = await fetch(
-                `${ENDPOINTS.search}/date?=${date}`,
-                {
-                    method: "POST",
-
-                    headers:
-                        authHeaders(true),
-                }
-            );
-
-            const data =
-                await readJSON(response);
-
-            if (!response.ok) {
-                throw new Error(
-                    data.message ||
-                    "Unable to search consultations."
-                );
-            }
-
-            const consultations =
-                extractArray(
-                    data,
-                    [
-                        "consultations",
-                        "bookings"
-                    ]
-                );
-
-            renderConsultations(
-                $("#searchResults"),
-                consultations
-            );
-
-            setMessage(
-                $("#searchMessage"),
-                `${consultations.length} result(s).`,
-                "success"
-            );
-        } catch (error) {
-            setMessage(
-                $("#searchMessage"),
-                error.message,
-                "error"
-            );
-        } finally {
-            button.disabled = false;
-
-            button.textContent =
-                "Search";
-        }
-    }
-);
-
-/* ---------------- Update availability ---------------- */
-
-$("#availabilityForm").addEventListener(
-    "submit",
-    async (event) => {
-        event.preventDefault();
-
-        const button =
-            $("#updateAvailability");
-
-        const body = {
-            date:
-                $("#availabilityDate").value,
-
-            morningCapacity:
-                Number(
-                    $("#morningCapacity").value
-                ),
-
-            afternoonCapacity:
-                Number(
-                    $("#afternoonCapacity").value
-                ),
-
-            eveningCapacity:
-                Number(
-                    $("#eveningCapacity").value
-                )
-        };
-
-        button.disabled = true;
-
-        button.textContent =
-            "Updating...";
-
-        try {
-            const response = await fetch(
-                ENDPOINTS.availability,
-                {
-                    method: "PUT",
-
-                    headers:
-                        authHeaders(true),
-
-                    body:
-                        JSON.stringify(body)
-                }
-            );
-
-            const data =
-                await readJSON(response);
-
-            if (!response.ok) {
-                throw new Error(
-                    data.message ||
-                    "Unable to update availability."
-                );
-            }
-
-            setMessage(
-                $("#availabilityMessage"),
-                data.message ||
-                "Availability updated successfully.",
-                "success"
-            );
-        } catch (error) {
-            setMessage(
-                $("#availabilityMessage"),
-                error.message,
-                "error"
-            );
-        } finally {
-            button.disabled = false;
-
-            button.textContent =
-                "Update Availability";
-        }
-    }
-);
-
-/* ---------------- Initial page setup ---------------- */
-
-$("#availabilityDate").min =
-    getTodayDate();
-
-$("#availabilityDate").value =
+$("#date").max =
     getTodayDate();
 
 openTab("find");
