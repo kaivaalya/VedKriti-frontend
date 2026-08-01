@@ -8,29 +8,29 @@ import { domain } from "../config.js";
 
 const ENDPOINTS = {
     findDoctor:
-        `${domain}/api/find-doctor`,
+        `${domain}/api/doctor/find-doctor`,
 
     bookDoctor:
-        `${domain}/api/book-doctor`,
+        `${domain}/api/booking/book-doctor`,
 
     upcoming:
-        `${domain}/api/patient/consultations/upcoming`,
+        `${domain}/api/booking/patient-bookings`,
 
     past:
-        `${domain}/api/patient/bookings/past`,
+        `${domain}/api/booking/patient-bookings`,
 
     reports:
-        `${domain}/api/patient/reports`,
+        `${domain}/api/report/get-reports`,
 
     feedback: (bookingId) =>
-        `${domain}/api/patient/bookings/${
+        `${domain}/api/booking/take-feedback?id=${
             encodeURIComponent(bookingId)
-        }/feedback`,
+        }`,
 
     conference: (bookingId) =>
-        `${domain}/api/patient/consultations/${
+        `${domain}/api/booking/agora-token?bookingId=${
             encodeURIComponent(bookingId)
-        }/conference-credentials`
+        }`
 };
 
 /* =========================================================
@@ -756,19 +756,65 @@ $("#signinForm").addEventListener(
             "Searching...";
 
         try {
+            const params = new URLSearchParams();
+
+            if (filters.speciality) {
+                params.set(
+                    "specialization",
+                    filters.speciality
+                );
+            }
+
+            if (filters.facility) {
+                params.set(
+                    "facilityName",
+                    filters.facility
+                );
+            }
+
+            if (filters.minPrice !== null) {
+                params.set(
+                    "minFee",
+                    filters.minPrice
+                );
+            }
+
+            if (filters.maxPrice !== null) {
+                params.set(
+                    "maxFee",
+                    filters.maxPrice
+                );
+            }
+
+            if (filters.minRating !== null) {
+                params.set(
+                    "minRating",
+                    filters.minRating
+                );
+            }
+
+            if (filters.city) {
+                params.set(
+                    "city",
+                    filters.city
+                );
+            }
+
+            if (filters.date) {
+                params.set(
+                    "date",
+                    filters.date
+                );
+            }
+
             const response =
                 await fetch(
-                    `${ENDPOINTS.findDoctor}?city=${city}`,
+                    `${ENDPOINTS.findDoctor}?${params}`,
                     {
-                        method: "POST",
+                        method: "GET",
 
                         headers:
-                            authHeaders(true),
-
-                        body:
-                            JSON.stringify(
-                                filters
-                            )
+                            authHeaders()
                     }
                 );
 
@@ -982,9 +1028,14 @@ $("#bookingForm").addEventListener(
             "Booking...";
 
         try {
+            const bookingUrl =
+                `${ENDPOINTS.bookDoctor}` +
+                `?id=${encodeURIComponent(selectedBooking.doctorId)}` +
+                `&consultationType=${encodeURIComponent(selectedType.value)}`;
+
             const response =
                 await fetch(
-                    ENDPOINTS.bookDoctor,
+                    bookingUrl,
                     {
                         method: "POST",
 
@@ -992,9 +1043,10 @@ $("#bookingForm").addEventListener(
                             authHeaders(true),
 
                         body:
-                            JSON.stringify(
-                                requestBody
-                            )
+                            JSON.stringify({
+                                date: selectedBooking.date,
+                                slot: selectedBooking.slot
+                            })
                     }
                 );
 
@@ -1827,7 +1879,7 @@ pastBookingResults.addEventListener(
                         bookingId
                     ),
                     {
-                        method: "PATCH",
+                        method: "PUT",
 
                         headers:
                             authHeaders(true),
@@ -1922,9 +1974,13 @@ const joinConference = async (
         const credentials =
             data.data || data;
 
+        const appId =
+            credentials.appId ||
+            credentials.agoraAppId;
+
         const channel =
-            credentials.channel ||
-            credentials.channelName;
+            credentials.channelName ||
+            credentials.channel;
 
         const conferenceToken =
             credentials.token ||
@@ -1936,6 +1992,18 @@ const joinConference = async (
         ) {
             throw new Error(
                 "The backend did not return a channel and token."
+            );
+        }
+
+        if (appId) {
+            localStorage.setItem(
+                "agoraAppId",
+                appId
+            );
+
+            sessionStorage.setItem(
+                "agoraAppId",
+                appId
             );
         }
 

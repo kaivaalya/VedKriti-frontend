@@ -13,7 +13,7 @@ const ENDPOINTS = {
     SIGNUP: `${domain}/api/auth/verify-user`,
 
     START_CONSULTATION:
-        `${domain}/api/doctor/consultations/verify-start`
+        `${domain}/api/booking/start-consultation`
 };
 
 if (purpose === "START_CONSULTATION") {
@@ -92,36 +92,53 @@ form.addEventListener("submit", async (event) => {
     errorElement.textContent = "";
 
     try {
-        const payload =
-            purpose === "START_CONSULTATION"
-                ? {
-                    otp,
-                    bookingId: localStorage.getItem(
-                        "currentConsultationBookingId"
-                    )
+        let response;
+
+        if (purpose === "START_CONSULTATION") {
+            const id = localStorage.getItem(
+                "currentConsultationBookingId"
+            );
+
+            const url =
+                `${ENDPOINTS.START_CONSULTATION}` +
+                `?id=${encodeURIComponent(id)}` +
+                `&otp=${encodeURIComponent(otp)}`;
+
+            response = await fetch(
+                url,
+                {
+                    method: "PUT",
+
+                    headers: {
+                        Authorization:
+                            `Bearer ${
+                                localStorage.getItem("token") || ""
+                            }`
+                    }
                 }
-                : {
-                    otp,
-                    email: localStorage.getItem("email")
-                };
+            );
+        } else {
+            response = await fetch(
+                ENDPOINTS[purpose] || ENDPOINTS.SIGNUP,
+                {
+                    method: "POST",
 
-        const response = await fetch(
-            ENDPOINTS[purpose] || ENDPOINTS.SIGNUP,
-            {
-                method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
 
-                headers: {
-                    "Content-Type": "application/json",
+                        Authorization:
+                            `Bearer ${
+                                localStorage.getItem("token") || ""
+                            }`
+                    },
 
-                    Authorization:
-                        `Bearer ${
-                            localStorage.getItem("token") || ""
-                        }`
-                },
-
-                body: JSON.stringify(payload)
-            }
-        );
+                    body: JSON.stringify({
+                        otp,
+                        email: localStorage.getItem("email")
+                    })
+                }
+            );
+        }
 
         const data = await readJSON(response);
 
@@ -135,7 +152,7 @@ form.addEventListener("submit", async (event) => {
 
         if (purpose === "START_CONSULTATION") {
             globalThis.location.href =
-                "../doctor/home.html";
+                "../doc-dashboard/home.html";
 
             return;
         }

@@ -6,10 +6,10 @@ import { domain } from "../config.js";
  */
 const ENDPOINTS = {
     statistics:
-        `${domain}/api/admin/statistics`,
+        `${domain}/api/admin/dashboard`,
 
     findDoctors:
-        `${domain}/api/doctor/find-doctor`,
+        `${domain}/api/admin/doctors`,
 
     removeDoctor: (doctorId) =>
         `${domain}/api/admin/doctors/${

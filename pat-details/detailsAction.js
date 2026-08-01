@@ -85,7 +85,7 @@ document.getElementById("btnAbout").addEventListener("click", async (e) => {
 
     try {
         const response = await fetch(
-            `${domain}/api/patient/profile`,
+            `${domain}/api/patient/update-profile`,
             {
                 method: "PUT",
                 headers: {
@@ -98,7 +98,7 @@ document.getElementById("btnAbout").addEventListener("click", async (e) => {
         const data = await response.json();
 
         if (response.ok) {
-            globalThis.location.href = "../home/home.html";
+            globalThis.location.href = "../home/pat-home.html";
         } else {
             showError(data.message || "Unable to save profile details");
         }

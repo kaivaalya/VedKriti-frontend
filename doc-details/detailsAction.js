@@ -1328,7 +1328,7 @@ document
             new FormData();
 
         medicalCertForm.append(
-            "file",
+            "document",
             medicalCertificate
         );
 
@@ -1346,7 +1346,7 @@ document
             new FormData();
 
         governmentIdForm.append(
-            "file",
+            "document",
             governmentId
         );
 

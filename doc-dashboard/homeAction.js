@@ -5,28 +5,28 @@ import { domain } from "../config.js";
  */
 const ENDPOINTS = {
     search:
-        `${domain}/api/booking/doctor-booking/date`,
+        `${domain}/api/booking/doctor-bookings`,
 
     today:
-        `${domain}/api/booking/doctor-booking/date`,
+        `${domain}/api/booking/doctor-bookings`,
 
     emergencyCancel:
-        `${domain}/api/doctor/consultations/emergency-cancel`,
+        `${domain}/api/booking/emergency-cancel`,
 
-    start: (bookingId) =>
-        `${domain}/api/doctor/consultations/${
+    start: (bookingId, otp) =>
+        `${domain}/api/booking/start-consultation?id=${
             encodeURIComponent(bookingId)
-        }/start`,
+        }&otp=${encodeURIComponent(otp)}`,
 
     end: (bookingId) =>
-        `${domain}/api/doctor/consultations/${
+        `${domain}/api/booking/end-consultation?id=${
             encodeURIComponent(bookingId)
-        }/end`,
+        }`,
 
     conference: (bookingId) =>
-        `${domain}/api/doctor/consultations/${
+        `${domain}/api/booking/agora-token?bookingId=${
             encodeURIComponent(bookingId)
-        }/conference-credentials`
+        }`
 };
 
 /* =========================================================
@@ -610,7 +610,7 @@ $("#emergencyCancelForm").addEventListener(
             const response = await fetch(
                 ENDPOINTS.emergencyCancel,
                 {
-                    method: "PATCH",
+                    method: "PUT",
 
                     headers:
                         authHeaders(true),
@@ -819,16 +819,6 @@ todayResults.addEventListener(
         const isStarting =
             action === "start";
 
-        const endpoint =
-            isStarting
-                ? ENDPOINTS.start(bookingId)
-                : ENDPOINTS.end(bookingId);
-
-        const nextStatus =
-            isStarting
-                ? "CONSULTING"
-                : "DONE";
-
         const originalText =
             button.textContent;
 
@@ -840,21 +830,34 @@ todayResults.addEventListener(
                 : "Ending...";
 
         try {
+            let endpoint;
+
+            if (isStarting) {
+                const otp = globalThis.prompt(
+                    "Enter the OTP to start this consultation:"
+                );
+
+                if (otp === null) {
+                    button.disabled = false;
+                    button.textContent = originalText;
+                    return;
+                }
+
+                endpoint = ENDPOINTS.start(bookingId, otp.trim());
+            } else {
+                endpoint = ENDPOINTS.end(bookingId);
+            }
+
             const response = await fetch(
                 endpoint,
                 {
-                    method: "PATCH",
+                    method: "PUT",
 
                     headers:
-                        authHeaders(true),
+                        authHeaders(),
 
                     credentials:
-                        "include",
-
-                    body:
-                        JSON.stringify({
-                            status: nextStatus
-                        })
+                        "include"
                 }
             );
 
@@ -864,14 +867,14 @@ todayResults.addEventListener(
             if (!response.ok) {
                 throw new Error(
                     data.message ||
-                    `Unable to update consultation to ${nextStatus}.`
+                    `Unable to update consultation.`
                 );
             }
 
             setMessage(
                 consultationMessage,
                 data.message ||
-                `Consultation updated to ${nextStatus}.`,
+                `Consultation updated.`,
                 "success"
             );
 
@@ -930,9 +933,13 @@ const joinConference = async (
         const credentials =
             data.data || data;
 
+        const appId =
+            credentials.appId ||
+            credentials.agoraAppId;
+
         const channel =
-            credentials.channel ||
-            credentials.channelName;
+            credentials.channelName ||
+            credentials.channel;
 
         const conferenceToken =
             credentials.token ||
@@ -944,6 +951,13 @@ const joinConference = async (
         ) {
             throw new Error(
                 "The backend did not return a channel and token."
+            );
+        }
+
+        if (appId) {
+            localStorage.setItem(
+                "agoraAppId",
+                appId
             );
         }
 
