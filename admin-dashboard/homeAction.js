@@ -9,10 +9,10 @@ const ENDPOINTS = {
         `${domain}/api/admin/statistics`,
 
     findDoctors:
-        `${domain}/api/doctor/find-doctor`,
+        `${domain}/api/doctors/find-doctor`,
 
     removeDoctor: (doctorId) =>
-        `${domain}/api/admin/doctor/${
+        `${domain}/api/admin/doctors/${
             encodeURIComponent(doctorId)
         }`,
 
@@ -20,7 +20,7 @@ const ENDPOINTS = {
         `${domain}/api/admin/doctors/pending`,
 
     verifyDoctor: (doctorId) =>
-        `${domain}/api/admin/doctor/${
+        `${domain}/api/admin/doctors/${
             encodeURIComponent(doctorId)
         }/verify`
 };
