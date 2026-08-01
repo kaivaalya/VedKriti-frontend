@@ -557,8 +557,8 @@ document
                 return;
             }
 
-            const experiences = Array.isArray(data.experiences)
-                ? data.experiences
+            const experiences = Array.isArray(data)
+                ? data
                 : [];
 
             /*
@@ -958,14 +958,6 @@ document
             return;
         }
 
-        const formData = new FormData();
-
-        formData.append("governmentId", governmentId);
-        formData.append(
-            "medicalCertificate",
-            medicalCertificate
-        );
-
         setButtonLoading(submitButton, true, "Uploading...");
 
         try {
@@ -1011,7 +1003,7 @@ document
                     },
                     body: {
                         file: governmentId,
-                        title: "Medical Certificate",
+                        title: "Government ID",
                         isPublic: "true"
                     }
                 }
