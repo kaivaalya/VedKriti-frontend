@@ -17,7 +17,7 @@ const ENDPOINTS = {
         }`,
 
     pendingDoctors:
-        `${domain}/api/admin/doctor/pending`,
+        `${domain}/api/admin/doctors/pending`,
 
     verifyDoctor: (doctorId) =>
         `${domain}/api/admin/doctor/${
