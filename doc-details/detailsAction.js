@@ -628,15 +628,15 @@ document
             }
 
             document.getElementById("m_cap").value =
-                data.morningCapacity ?? "";
+                data.data.morningCapacity ?? "";
 
             document.getElementById("a_cap").value =
-                data.afternoonCapacity ?? "";
+                data.data.afternoonCapacity ?? "";
 
             document.getElementById("e_cap").value =
-                data.eveningCapacity ?? "";
+                data.data.eveningCapacity ?? "";
 
-            const holiday = String(data.holiday || "");
+            const holiday = String(data.data.holidays || "");
 
             document
                 .querySelectorAll('input[name="holiday"]')
@@ -692,7 +692,7 @@ document
          * If no holiday is selected, send 0.
          * Monday + Tuesday + Wednesday becomes 123.
          */
-        const holiday =
+        const holidays =
             holidayValue === "" ? 0 : Number(holidayValue);
 
         try {
@@ -708,7 +708,7 @@ document
                         morningCapacity,
                         afternoonCapacity,
                         eveningCapacity,
-                        holiday
+                        holidays
                     })
                 }
             );
