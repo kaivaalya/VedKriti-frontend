@@ -190,7 +190,13 @@ const renderDoctorCard = (doctor) => {
     `;
 };
 
+const doctorsMap = new Map();
+
 const renderDoctors = (doctors) => {
+    doctorsMap.clear();
+    (doctors || []).forEach(d => {
+        if (d && d._id) doctorsMap.set(String(d._id), d);
+    });
     const searchResults = $("#searchResults");
     if (!doctors || !doctors.length) {
         searchResults.innerHTML = `
@@ -285,7 +291,7 @@ $("#signinForm").addEventListener("submit", async (event) => {
    DOCTOR PROFILE & AVAILABILITY VIEW (TAB 1 DETAIL)
 ========================================================= */
 
-const fetchDoctorProfile = async (doctorId) => {
+const fetchDoctorProfile = async (doctorId, fallbackDoctor = null) => {
     const searchContainer = $("#doctorSearchContainer");
     const profileContainer = $("#doctorProfileContainer");
 
@@ -306,16 +312,26 @@ const fetchDoctorProfile = async (doctorId) => {
 
         renderDoctorProfileView(data.data);
     } catch (err) {
-        profileContainer.innerHTML = `
-            <div class="profile-error">
-                <button id="backToSearch" class="back-button">&larr; Back to Search</button>
-                <p class="error-message">${escapeHTML(err.message)}</p>
-            </div>
-        `;
-        $("#backToSearch").addEventListener("click", () => {
-            profileContainer.hidden = true;
-            searchContainer.hidden = false;
-        });
+        console.warn("getDoctorProfile API warning:", err.message);
+        if (fallbackDoctor) {
+            renderDoctorProfileView({
+                doctor: fallbackDoctor,
+                experiance: [],
+                availability: [],
+                feedback: []
+            });
+        } else {
+            profileContainer.innerHTML = `
+                <div class="profile-error">
+                    <button id="backToSearch" class="back-button">&larr; Back to Search</button>
+                    <p class="error-message">${escapeHTML(err.message)}</p>
+                </div>
+            `;
+            $("#backToSearch").addEventListener("click", () => {
+                profileContainer.hidden = true;
+                searchContainer.hidden = false;
+            });
+        }
     }
 };
 
@@ -593,8 +609,9 @@ $("#searchResults").addEventListener("click", (event) => {
     const card = event.target.closest(".doctor-card, .view-profile-btn");
     if (!card) return;
     const docId = card.dataset.doctorId;
+    const fallbackDoctor = doctorsMap.get(String(docId));
     if (docId) {
-        fetchDoctorProfile(docId);
+        fetchDoctorProfile(docId, fallbackDoctor);
     }
 });
 
