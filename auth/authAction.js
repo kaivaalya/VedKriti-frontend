@@ -1,6 +1,11 @@
 import { domain } from "../config.js";
 
+/* =========================================================
+   DOM ELEMENTS
+========================================================= */
+
 const form = document.getElementById("signinForm");
+
 const loginRadio = document.getElementById("login");
 const createRadio = document.getElementById("create");
 const roleSelect = document.getElementById("role");
@@ -9,33 +14,49 @@ const submitButton = document.getElementById("button");
 const buttonText = document.getElementById("buttonText");
 const buttonLoader = document.getElementById("buttonLoader");
 
-const formDescription = document.getElementById("formDescription");
-const errorElement = document.getElementById("err");
+const formDescription =
+    document.getElementById("formDescription");
 
-const passwordInput = document.getElementById("password");
-const togglePasswordButton = document.getElementById("togglePassword");
+const errorElement =
+    document.getElementById("err");
 
-const mode = localStorage.getItem("mode");
+const passwordInput =
+    document.getElementById("password");
 
-const patientOption = new Option("Patient", "PATIENT");
-const doctorOption = new Option("Doctor", "DOCTOR");
-const adminOption = new Option("Admin", "ADMIN");
+const togglePasswordButton =
+    document.getElementById("togglePassword");
 
+/* =========================================================
+   ROLE OPTIONS
+========================================================= */
 
+const patientOption =
+    new Option("Patient", "PATIENT");
+
+const doctorOption =
+    new Option("Doctor", "DOCTOR");
+
+const adminOption =
+    new Option("Admin", "ADMIN");
 
 const updateRoleOptions = () => {
     const selectedRole = roleSelect.value;
 
     roleSelect.innerHTML = "";
 
-    const placeholder = new Option("Select your role", "");
+    const placeholder =
+        new Option("Select your role", "");
+
     placeholder.disabled = true;
 
     roleSelect.add(placeholder);
     roleSelect.add(patientOption);
     roleSelect.add(doctorOption);
 
-    // Admin is available only while logging in.
+    /*
+     * Admin login is allowed, but an admin account
+     * cannot be created through this page.
+     */
     if (loginRadio.checked) {
         roleSelect.add(adminOption);
     }
@@ -44,36 +65,46 @@ const updateRoleOptions = () => {
         ? ["PATIENT", "DOCTOR", "ADMIN"]
         : ["PATIENT", "DOCTOR"];
 
-    if (allowedRoles.includes(selectedRole)) {
-        roleSelect.value = selectedRole;
-    } else {
-        roleSelect.value = "";
-    }
+    roleSelect.value =
+        allowedRoles.includes(selectedRole)
+            ? selectedRole
+            : "";
 };
+
+/* =========================================================
+   FORM MODE
+========================================================= */
 
 const updateFormMode = () => {
     errorElement.textContent = "";
 
     if (createRadio.checked) {
-        buttonText.textContent = "Create Account";
+        buttonText.textContent =
+            "Create Account";
 
         formDescription.textContent =
             "Create your account and begin managing your healthcare.";
 
-        passwordInput.autocomplete = "new-password";
+        passwordInput.autocomplete =
+            "new-password";
     } else {
-        buttonText.textContent = "Log In";
+        buttonText.textContent =
+            "Log In";
 
         formDescription.textContent =
             "Log in to access your VedKriti account.";
 
-        passwordInput.autocomplete = "current-password";
+        passwordInput.autocomplete =
+            "current-password";
     }
 
     updateRoleOptions();
 };
 
-if (mode === "create") {
+const savedMode =
+    localStorage.getItem("mode");
+
+if (savedMode === "create") {
     createRadio.checked = true;
 } else {
     loginRadio.checked = true;
@@ -81,34 +112,60 @@ if (mode === "create") {
 
 updateFormMode();
 
-loginRadio.addEventListener("change", updateFormMode);
-createRadio.addEventListener("change", updateFormMode);
+loginRadio.addEventListener(
+    "change",
+    updateFormMode
+);
 
-togglePasswordButton.addEventListener("click", () => {
-    const passwordIsHidden = passwordInput.type === "password";
+createRadio.addEventListener(
+    "change",
+    updateFormMode
+);
 
-    passwordInput.type = passwordIsHidden ? "text" : "password";
-    togglePasswordButton.textContent = passwordIsHidden ? "Hide" : "Show";
+/* =========================================================
+   PASSWORD VISIBILITY
+========================================================= */
 
-    togglePasswordButton.setAttribute(
-        "aria-label",
-        passwordIsHidden ? "Hide password" : "Show password"
-    );
-});
+togglePasswordButton.addEventListener(
+    "click",
+    () => {
+        const passwordIsHidden =
+            passwordInput.type === "password";
+
+        passwordInput.type =
+            passwordIsHidden
+                ? "text"
+                : "password";
+
+        togglePasswordButton.textContent =
+            passwordIsHidden
+                ? "Hide"
+                : "Show";
+
+        togglePasswordButton.setAttribute(
+            "aria-label",
+            passwordIsHidden
+                ? "Hide password"
+                : "Show password"
+        );
+    }
+);
+
+/* =========================================================
+   HELPER FUNCTIONS
+========================================================= */
 
 const setLoading = (isLoading) => {
     submitButton.disabled = isLoading;
     buttonLoader.hidden = !isLoading;
 
-    if (isLoading) {
-        buttonText.textContent = createRadio.checked
+    buttonText.textContent = isLoading
+        ? createRadio.checked
             ? "Creating..."
-            : "Logging in...";
-    } else {
-        buttonText.textContent = createRadio.checked
+            : "Logging in..."
+        : createRadio.checked
             ? "Create Account"
             : "Log In";
-    }
 };
 
 const getResponseData = async (response) => {
@@ -119,124 +176,331 @@ const getResponseData = async (response) => {
     }
 };
 
-form.addEventListener("submit", async (event) => {
-    event.preventDefault();
+const saveLoginData = (
+    data,
+    fallbackRole,
+    email
+) => {
+    const normalizedRole = String(
+        data.role || fallbackRole
+    ).toUpperCase();
 
-    errorElement.textContent = "";
+    localStorage.setItem(
+        "token",
+        data.token
+    );
 
-    const username = document.getElementById("username").value.trim();
-    const password = passwordInput.value;
-    const email = document.getElementById("email").value.trim();
-    const role = roleSelect.value;
-
-    if (!role) {
-        errorElement.textContent = "Please select a role.";
-        return;
+    if (data.userId !== undefined) {
+        localStorage.setItem(
+            "userId",
+            data.userId
+        );
     }
 
-    // Prevent ADMIN from being submitted through account creation,
-    // even if someone manually changes the HTML.
-    if (createRadio.checked && role === "ADMIN") {
-        errorElement.textContent =
-            "An admin account cannot be created from this page.";
-        return;
+    localStorage.setItem(
+        "role",
+        normalizedRole
+    );
+
+    if (data.name !== undefined) {
+        localStorage.setItem(
+            "name",
+            data.name
+        );
     }
 
-    const endpoint = createRadio.checked
-        ? "/api/auth/signin-user"
-        : "/api/auth/login-user";
+    localStorage.setItem(
+        "email",
+        email
+    );
 
-    setLoading(true);
+    return normalizedRole;
+};
+
+/* =========================================================
+   PROFILE STATUS
+========================================================= */
+
+const getProfileStatus = async (
+    role,
+    token
+) => {
+    let endpoint;
+
+    if (role === "PATIENT") {
+        endpoint =
+            "/api/patient/profile-status";
+    } else if (role === "DOCTOR") {
+        endpoint =
+            "/api/doctor/profile-status";
+    } else {
+        return false;
+    }
 
     try {
-        const response = await fetch(`${domain}${endpoint}`, {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json",
-            },
+        const response = await fetch(
+            `${domain}${endpoint}`,
+            {
+                method: "GET",
+                headers: {
+                    Authorization:
+                        `Bearer ${token}`
+                }
+            }
+        );
 
-            body: JSON.stringify({
-                name: username,
-                password,
-                email,
-                role,
-            }),
-        });
-
-        const data = await getResponseData(response);
+        const result =
+            await getResponseData(response);
 
         if (!response.ok) {
-            errorElement.textContent =
-                data.message || "Unable to complete your request.";
-
-            return;
+            throw new Error(
+                result.message ||
+                "Unable to check profile status."
+            );
         }
 
-        if (createRadio.checked) {
-            localStorage.setItem("email", email);
-            localStorage.setItem("role", role);
+        /*
+         * Expected backend response:
+         *
+         * {
+         *     data: true
+         * }
+         */
 
-            window.location.href = "../otp/otp.html";
-            return;
+        if (typeof result.data !== "boolean") {
+            throw new Error(
+                "Invalid profile-status response received from the server."
+            );
         }
 
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("userId", data.userId);
-        localStorage.setItem("role", data.role);
-        localStorage.setItem("name", data.name);
-        localStorage.setItem("email", email);
-
-        const normalizedRole = String(data.role || role).toUpperCase();
-
-        let profileSetup;
-        let redirect;
-
-        if(normalizedRole==="PATIENT"){
-            profileSetup = await fetch(`${domain}/api/patient/profile-status`,{
-                method : "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`
-                },
-            })
-            redirect = await profileSetup.json();
-            redirect = redirect.data.data;
-        }else if(normalizedRole==="DOCTOR"){
-            profileSetup = await fetch(`${domain}/api/doctor/profile-status`,{
-                method : "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`
-                },
-            })
-            redirect = await profileSetup.json();
-            redirect = redirect.data.data;
-        }else{
-            redirect = false;
-        }
-
-        if(redirect === true){
-            if(normalizedRole === "PATIENT"){
-                window.location.href = "../home/pat-home.html";
-            }else if(normalizedRole === "DOCTOR"){
-                window.location.href = "../doc-dashboard/home.html";
-            }
-        }else{
-            if (normalizedRole === "PATIENT") {
-                window.location.href = "../pat-details/details.html";
-            } else if (normalizedRole === "DOCTOR") {
-                window.location.href = "../doc-details/details.html";
-            } else if (normalizedRole === "ADMIN") {
-                window.location.href = "../admin-dashboard/home.html";
-            }
-        }
+        return result.data;
     } catch (error) {
-        console.error(error);
+        console.error(
+            "Profile-status request failed:",
+            error
+        );
 
         errorElement.textContent =
-            "Unable to connect to the server. Please try again.";
-    } finally {
-        setLoading(false);
+            error.message ||
+            "Unable to check your profile status. Please try again.";
+
+        /*
+         * null means the request failed.
+         * false means the profile is incomplete.
+         */
+        return null;
     }
-});
+};
+
+/* =========================================================
+   REDIRECTION
+========================================================= */
+
+const redirectUser = (
+    role,
+    profileCompleted
+) => {
+    if (role === "ADMIN") {
+        window.location.href =
+            "../admin-dashboard/home.html";
+
+        return;
+    }
+
+    if (role === "PATIENT") {
+        window.location.href =
+            profileCompleted
+                ? "../home/pat-home.html"
+                : "../pat-details/details.html";
+
+        return;
+    }
+
+    if (role === "DOCTOR") {
+        window.location.href =
+            profileCompleted
+                ? "../doc-dashboard/home.html"
+                : "../doc-details/details.html";
+
+        return;
+    }
+
+    errorElement.textContent =
+        "The server returned an invalid user role.";
+};
+
+/* =========================================================
+   FORM SUBMISSION
+========================================================= */
+
+form.addEventListener(
+    "submit",
+    async (event) => {
+        event.preventDefault();
+
+        errorElement.textContent = "";
+
+        const username =
+            document
+                .getElementById("username")
+                .value
+                .trim();
+
+        const password =
+            passwordInput.value;
+
+        const email =
+            document
+                .getElementById("email")
+                .value
+                .trim();
+
+        const role =
+            roleSelect.value;
+
+        if (!role) {
+            errorElement.textContent =
+                "Please select a role.";
+
+            return;
+        }
+
+        /*
+         * Prevent admin registration even if someone
+         * manually modifies the HTML.
+         */
+        if (
+            createRadio.checked &&
+            role === "ADMIN"
+        ) {
+            errorElement.textContent =
+                "An admin account cannot be created from this page.";
+
+            return;
+        }
+
+        const endpoint =
+            createRadio.checked
+                ? "/api/auth/signin-user"
+                : "/api/auth/login-user";
+
+        setLoading(true);
+
+        try {
+            const response = await fetch(
+                `${domain}${endpoint}`,
+                {
+                    method: "POST",
+                    credentials: "include",
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+                    body: JSON.stringify({
+                        name: username,
+                        password,
+                        email,
+                        role
+                    })
+                }
+            );
+
+            const data =
+                await getResponseData(response);
+
+            if (!response.ok) {
+                errorElement.textContent =
+                    data.message ||
+                    "Unable to complete your request.";
+
+                return;
+            }
+
+            /* Account creation succeeded */
+
+            if (createRadio.checked) {
+                localStorage.setItem(
+                    "email",
+                    email
+                );
+
+                localStorage.setItem(
+                    "role",
+                    role
+                );
+
+                window.location.href =
+                    "../otp/otp.html";
+
+                return;
+            }
+
+            /* Login succeeded */
+
+            if (!data.token) {
+                throw new Error(
+                    "Access token was not received from the server."
+                );
+            }
+
+            const normalizedRole =
+                saveLoginData(
+                    data,
+                    role,
+                    email
+                );
+
+            /*
+             * Admin does not require a profile-status request.
+             */
+            if (normalizedRole === "ADMIN") {
+                redirectUser(
+                    normalizedRole,
+                    false
+                );
+
+                return;
+            }
+
+            if (
+                normalizedRole !== "PATIENT" &&
+                normalizedRole !== "DOCTOR"
+            ) {
+                errorElement.textContent =
+                    "The server returned an invalid user role.";
+
+                return;
+            }
+
+            const profileCompleted =
+                await getProfileStatus(
+                    normalizedRole,
+                    data.token
+                );
+
+            /*
+             * Stop redirection if the profile-status
+             * request failed.
+             */
+            if (profileCompleted === null) {
+                return;
+            }
+
+            redirectUser(
+                normalizedRole,
+                profileCompleted
+            );
+        } catch (error) {
+            console.error(
+                "Authentication failed:",
+                error
+            );
+
+            errorElement.textContent =
+                error.message ||
+                "Unable to connect to the server. Please try again.";
+        } finally {
+            setLoading(false);
+        }
+    }
+);
