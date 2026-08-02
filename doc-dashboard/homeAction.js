@@ -1,5 +1,7 @@
 import { domain } from "../config.js";
 
+console.log("Hello");
+
 /*
  * Change these paths if your backend uses different routes.
  */
