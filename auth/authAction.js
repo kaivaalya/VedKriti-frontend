@@ -21,6 +21,8 @@ const patientOption = new Option("Patient", "PATIENT");
 const doctorOption = new Option("Doctor", "DOCTOR");
 const adminOption = new Option("Admin", "ADMIN");
 
+
+
 const updateRoleOptions = () => {
     const selectedRole = roleSelect.value;
 
@@ -187,12 +189,45 @@ form.addEventListener("submit", async (event) => {
 
         const normalizedRole = String(data.role || role).toUpperCase();
 
-        if (normalizedRole === "PATIENT") {
-            window.location.href = "../pat-details/details.html";
-        } else if (normalizedRole === "DOCTOR") {
-            window.location.href = "../doc-details/details.html";
-        } else if (normalizedRole === "ADMIN") {
-            window.location.href = "../admin-dashboard/home.html";
+        const profileSetup;
+        const redirect;
+
+        if(normalizedRole==="PATIENT"){
+            profileSetup = await fetch(`${domain}/api/patient/profile-status`,{
+                method : "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localstorage.getItem("token")}`
+                },
+            })
+            redirect = await profileSetup.json();
+        }else if(normalizedRole==="DOCTOR"){
+            profileSetup = await fetch(`${domain}/api/doctor/profile-status`,{
+                method : "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localstorage.getItem("token")}`
+                },
+            })
+            redirect = await profileSetup.json();
+        }else{
+            redirect = false;
+        }
+        
+        if(redirect === true){
+            if(normalizedRole === "PATIENT"){
+                window.location.href = "../home/pat-home.html";
+            }else if(normalizedRole === "DOCTOR"){
+                window.location.href = "../doc-dashboard/home.html";
+            }
+        }else{
+            if (normalizedRole === "PATIENT") {
+                window.location.href = "../pat-details/details.html";
+            } else if (normalizedRole === "DOCTOR") {
+                window.location.href = "../doc-details/details.html";
+            } else if (normalizedRole === "ADMIN") {
+                window.location.href = "../admin-dashboard/home.html";
+            }
         }
     } catch (error) {
         console.error(error);
