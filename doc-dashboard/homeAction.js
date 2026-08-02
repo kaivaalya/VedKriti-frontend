@@ -920,6 +920,8 @@ const joinConference = async (
             }
         );
 
+        console.log(response);
+
         const data =
             await readJSON(response);
 
