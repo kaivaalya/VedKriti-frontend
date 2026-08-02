@@ -6,9 +6,10 @@ import { domain } from "../config.js";
  */
 const ENDPOINTS = {
     doctorDocuments: (doctorId) =>
-    `${domain}/api/doctors/${
-        encodeURIComponent(doctorId)
-    }/documents`,
+    
+        `${domain}/api/doctors/${
+            encodeURIComponent(doctorId)
+        }/documents`,
     statistics:
         `${domain}/api/admin/dashboard`,
 
@@ -27,7 +28,9 @@ const ENDPOINTS = {
         `${domain}/api/admin/doctors/${
             encodeURIComponent(doctorId)
         }/verify`
-};/*
+};
+
+/*
  * Frontend page where the admin can view a doctor's
  * uploaded verification documents.
  */
@@ -757,10 +760,6 @@ $("#doctorResults").addEventListener(
 );
 
 /* =========================================================
-   PENDING DOCTOR CARDS
-========================================================= */
-
-/* =========================================================
    VIEW DOCTOR DOCUMENTS
 ========================================================= */
 
@@ -821,7 +820,7 @@ $("#pendingDoctorResults").addEventListener(
 const documentItem = (doc) => {
     if (doc.fileType === "image") {
         return `
-            
+            <a
                 class="document-item"
                 href="${escapeHTML(doc.fileUrl)}"
                 target="_blank"
@@ -841,7 +840,7 @@ const documentItem = (doc) => {
     }
 
     return `
-        
+        <a
             class="document-item document-item-pdf"
             href="${escapeHTML(doc.fileUrl)}"
             target="_blank"
@@ -993,21 +992,22 @@ const pendingDoctorCard = (doctor) => {
                 ></textarea>
 
                 <div class="verification-actions">
-    <button
-        class="view-documents-btn"
-        type="button"
-        data-doctor-id="${escapeHTML(doctorId)}"
-    >
-        View Documents
-    </button>
+                    <button
+                        class="view-documents-btn"
+                        type="button"
+                        data-doctor-id="${escapeHTML(doctorId)}"
+                    >
+                        View Documents
+                    </button>
 
-    <button
-        class="primary-button submit-verification"
-        type="submit"
-    >
-        Submit Decision
-    </button>
-</div>
+                    <button
+                        class="primary-button submit-verification"
+                        type="submit"
+                    >
+                        Submit Decision
+                    </button>
+                </div>
+
                 <p
                     class="message form-message"
                     aria-live="polite"
