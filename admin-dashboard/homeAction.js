@@ -23,7 +23,14 @@ const ENDPOINTS = {
         `${domain}/api/admin/doctors/${
             encodeURIComponent(doctorId)
         }/verify`
-};
+};/*
+ * Frontend page where the admin can view a doctor's
+ * uploaded verification documents.
+ */
+const DOCUMENTS_URL = (doctorId) =>
+    `https://ved-kriti-frontend.vercel.app/doc-details/details.html?id=${
+        encodeURIComponent(doctorId)
+    }`;
 
 /* =========================================================
    HELPERS
@@ -832,12 +839,23 @@ const pendingDoctorCard = (doctor) => {
                     placeholder="Add verification remarks (optional)"
                 ></textarea>
 
-                <button
-                    class="primary-button submit-verification"
-                    type="submit"
-                >
-                    Submit Decision
-                </button>
+                <div class="verification-actions">
+                    
+                        class="view-documents-btn"
+                        href="${DOCUMENTS_URL(doctorId)}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        View Documents
+                    </a>
+
+                    <button
+                        class="primary-button submit-verification"
+                        type="submit"
+                    >
+                        Submit Decision
+                    </button>
+                </div>
 
                 <p
                     class="message form-message"
