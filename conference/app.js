@@ -1,3 +1,5 @@
+import { domain } from "../config.js";
+
 /* =========================================================
    CONFERENCE CREDENTIALS
 ========================================================= */
@@ -80,6 +82,39 @@ const errorElement =
 
 const roomStatusElement =
     document.getElementById("room-status");
+
+/* =========================================================
+   WORKFLOW ELEMENTS & STATE
+========================================================= */
+
+const workflowStartBtn = document.getElementById("workflow-start-btn");
+const workflowUploadBtn = document.getElementById("workflow-upload-btn");
+const workflowUploadInput = document.getElementById("workflow-upload-input");
+const workflowEndBtn = document.getElementById("workflow-end-btn");
+
+const currentBookingId = localStorage.getItem("currentConsultationBookingId");
+
+const ENDPOINTS = {
+    start: (bookingId, otp) =>
+        `${domain}/api/booking/start-consultation?id=${encodeURIComponent(bookingId)}&otp=${encodeURIComponent(otp)}`,
+    end: (bookingId) =>
+        `${domain}/api/booking/end-consultation?id=${encodeURIComponent(bookingId)}`,
+    uploadReport: () =>
+        `${domain}/api/report/upload-report?id=unknown`
+};
+
+const getToken = () => localStorage.getItem("token") || "";
+
+const authHeaders = () => ({
+    Authorization: `Bearer ${getToken()}`
+});
+
+const readJSON = async (response) => {
+    if (!response.headers.get("content-type")?.includes("application/json")) {
+        throw new Error("The server returned an invalid response.");
+    }
+    return response.json();
+};
 
 /* =========================================================
    HELPER FUNCTIONS
@@ -550,3 +585,121 @@ window.addEventListener(
         }
     }
 );
+
+/* =========================================================
+   WORKFLOW EVENT LISTENERS
+========================================================= */
+
+if (workflowStartBtn) {
+    workflowStartBtn.addEventListener("click", async () => {
+        if (!currentBookingId) {
+            showConferenceError("Booking ID is missing. Cannot start consultation.");
+            return;
+        }
+
+        const otp = globalThis.prompt("Enter the OTP to start this consultation:");
+        if (otp === null) return;
+
+        setButtonLoading(workflowStartBtn, "Starting...", true);
+        showConferenceError("");
+
+        try {
+            const response = await fetch(ENDPOINTS.start(currentBookingId, otp.trim()), {
+                method: "PUT",
+                headers: authHeaders()
+            });
+
+            const data = await readJSON(response);
+
+            if (!response.ok) {
+                throw new Error(data.message || "Unable to start consultation.");
+            }
+
+            setRoomStatus("Consultation started");
+            
+            // Move to next step
+            workflowStartBtn.style.display = "none";
+            workflowUploadBtn.style.display = "inline-block";
+        } catch (error) {
+            showConferenceError(error.message);
+            setButtonLoading(workflowStartBtn, "Starting...", false);
+        }
+    });
+}
+
+if (workflowUploadInput) {
+    workflowUploadInput.addEventListener("change", async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        if (!currentBookingId) return;
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("title", "Consultation Report");
+        formData.append("category", "PRESCRIPTION");
+        formData.append("bookingId", currentBookingId);
+
+        setRoomStatus("Uploading report...");
+        showConferenceError("");
+
+        try {
+            const response = await fetch(ENDPOINTS.uploadReport(), {
+                method: "PUT",
+                headers: {
+                    Authorization: `Bearer ${getToken()}`
+                },
+                body: formData
+            });
+
+            const data = await readJSON(response);
+
+            if (!response.ok) {
+                throw new Error(data.message || "Failed to upload report.");
+            }
+
+            setRoomStatus("Report uploaded successfully");
+            
+            // Move to next step
+            workflowUploadBtn.style.display = "none";
+            workflowEndBtn.style.display = "inline-block";
+        } catch (error) {
+            showConferenceError(error.message);
+            setRoomStatus("Consultation live");
+        } finally {
+            event.target.value = "";
+        }
+    });
+}
+
+if (workflowEndBtn) {
+    workflowEndBtn.addEventListener("click", async () => {
+        if (!currentBookingId) return;
+
+        setButtonLoading(workflowEndBtn, "Ending...", true);
+        showConferenceError("");
+
+        try {
+            const response = await fetch(ENDPOINTS.end(currentBookingId), {
+                method: "PUT",
+                headers: authHeaders()
+            });
+
+            const data = await readJSON(response);
+
+            if (!response.ok) {
+                throw new Error(data.message || "Unable to end consultation.");
+            }
+
+            setRoomStatus("Consultation ended");
+            
+            // Hide the button
+            workflowEndBtn.style.display = "none";
+            
+            // Optionally leave the call
+            await leaveAndRemoveLocalStream();
+        } catch (error) {
+            showConferenceError(error.message);
+            setButtonLoading(workflowEndBtn, "Ending...", false);
+        }
+    });
+}

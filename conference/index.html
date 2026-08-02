@@ -63,6 +63,19 @@
                     Turn camera off
                 </button>
 
+                <button id="workflow-start-btn" style="background-color: #28a745; color: white;">
+                    Start Consultation
+                </button>
+                
+                <label id="workflow-upload-btn" class="button" style="display: none; cursor:pointer; background-color: #007bff; color: white; padding: 10px; border-radius: 4px; text-align: center;">
+                    Send Report
+                    <input type="file" id="workflow-upload-input" accept="image/*" capture="environment" hidden>
+                </label>
+
+                <button id="workflow-end-btn" style="display: none; background-color: #dc3545; color: white;">
+                    End Consultation
+                </button>
+
                 <button
                     id="leave-btn"
                     class="danger"
@@ -81,7 +94,7 @@
     </main>
 
     <script src="AgoraRTC_N-4.24.5.js"></script>
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
 
 </body>
 </html>
