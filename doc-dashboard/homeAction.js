@@ -419,7 +419,7 @@ const consultationCard = (booking, isSearch = false) => {
 
     const tokenNumber =
         booking.tokenNumber ??
-        booking.token ??
+        booking.tokenNo ??
         "Not assigned";
 
     const consultationType =
