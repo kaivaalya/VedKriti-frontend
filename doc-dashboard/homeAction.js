@@ -995,7 +995,7 @@ const joinConference = async (
             localStorage.getItem("conferenceUid")
         );
 
-        alert(
+        await alert(
             `Received UID: ${credentials.uid}\n` +
             `Saved UID: ${localStorage.getItem("conferenceUid")}`
         );
