@@ -920,7 +920,7 @@ const joinConference = async (
             }
         );
 
-        console.log(response);
+        await console.log(response);
 
         const data =
             await readJSON(response);
@@ -1002,8 +1002,8 @@ const joinConference = async (
             `Saved UID: ${localStorage.getItem("conferenceUid")}`
         );
 
-        globalThis.location.href =
-            "../conference/index.html";
+        // globalThis.location.href =
+        //     "../conference/index.html";
     } catch (error) {
         setMessage(
             consultationMessage,
