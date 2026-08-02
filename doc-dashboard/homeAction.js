@@ -1,7 +1,5 @@
 import { domain } from "../config.js";
 
-console.log("Hello");
-
 /*
  * Change these paths if your backend uses different routes.
  */
@@ -999,13 +997,8 @@ const joinConference = async (
             localStorage.getItem("conferenceUid")
         );
 
-        await alert(
-            `Received UID: ${credentials.uid}\n` +
-            `Saved UID: ${localStorage.getItem("conferenceUid")}`
-        );
-
-        // globalThis.location.href =
-        //     "../conference/index.html";
+        globalThis.location.href =
+            "../conference/index.html";
     } catch (error) {
         setMessage(
             consultationMessage,

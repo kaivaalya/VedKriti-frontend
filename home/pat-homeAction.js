@@ -798,6 +798,7 @@ $("#consultationResults").addEventListener("click", async (event) => {
         const appId = payload.appId || payload.agoraAppId;
         const token = payload.token || payload.rtcToken;
         const channelName = payload.channelName || payload.channel;
+        const conferenceUid = payload.uid;
 
         if (!appId || !token || !channelName) {
             throw new Error("Invalid conference token response from backend.");
@@ -806,6 +807,7 @@ $("#consultationResults").addEventListener("click", async (event) => {
         localStorage.setItem("agoraAppId", appId);
         localStorage.setItem("conferenceToken", token);
         localStorage.setItem("conferenceChannel", channelName);
+        localStorage.setItem("conferenceUid",conferenceUid);
 
         globalThis.location.href = "../conference/index.html";
     } catch (err) {
