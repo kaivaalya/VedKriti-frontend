@@ -995,6 +995,11 @@ const joinConference = async (
             localStorage.getItem("conferenceUid")
         );
 
+        alert(
+            `Received UID: ${credentials.uid}\n` +
+            `Saved UID: ${localStorage.getItem("conferenceUid")}`
+        );
+
         globalThis.location.href =
             "../conference/index.html";
     } catch (error) {
