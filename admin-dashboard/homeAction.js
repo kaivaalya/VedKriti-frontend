@@ -5,6 +5,10 @@ import { domain } from "../config.js";
  * different admin routes.
  */
 const ENDPOINTS = {
+    doctorDocuments: (doctorId) =>
+    `${domain}/api/doctors/${
+        encodeURIComponent(doctorId)
+    }/documents`
     statistics:
         `${domain}/api/admin/dashboard`,
 
@@ -23,7 +27,14 @@ const ENDPOINTS = {
         `${domain}/api/admin/doctors/${
             encodeURIComponent(doctorId)
         }/verify`
-};
+};/*
+ * Frontend page where the admin can view a doctor's
+ * uploaded verification documents.
+ */
+const DOCUMENTS_URL = (doctorId) =>
+    `https://ved-kriti-frontend.vercel.app/doc-details/details.html?id=${
+        encodeURIComponent(doctorId)
+    }`;
 
 /* =========================================================
    HELPERS
@@ -749,6 +760,155 @@ $("#doctorResults").addEventListener(
    PENDING DOCTOR CARDS
 ========================================================= */
 
+/* =========================================================
+   VIEW DOCTOR DOCUMENTS
+========================================================= */
+
+$("#pendingDoctorResults").addEventListener(
+    "click",
+    async (event) => {
+        const button =
+            event.target.closest(
+                ".view-documents-btn"
+            );
+
+        if (!button) {
+            return;
+        }
+
+        const doctorId =
+            button.dataset.doctorId;
+
+        button.disabled = true;
+        const originalText = button.textContent;
+        button.textContent = "Loading...";
+
+        try {
+            const response = await fetch(
+                ENDPOINTS.doctorDocuments(
+                    doctorId
+                ),
+                {
+                    method: "GET",
+                    headers: authHeaders()
+                }
+            );
+
+            const data =
+                await readJSON(response);
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message ||
+                    "Unable to load documents."
+                );
+            }
+
+            renderDocumentsModal(
+                data.data || []
+            );
+        } catch (error) {
+            globalThis.alert(
+                error.message
+            );
+        } finally {
+            button.disabled = false;
+            button.textContent = originalText;
+        }
+    }
+);
+
+const documentItem = (doc) => {
+    if (doc.fileType === "image") {
+        return `
+            
+                class="document-item"
+                href="${escapeHTML(doc.fileUrl)}"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                <img
+                    class="document-thumb"
+                    src="${escapeHTML(doc.fileUrl)}"
+                    alt="${escapeHTML(doc.title)}"
+                >
+
+                <span>
+                    ${escapeHTML(doc.title)}
+                </span>
+            </a>
+        `;
+    }
+
+    return `
+        
+            class="document-item document-item-pdf"
+            href="${escapeHTML(doc.fileUrl)}"
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+            <span class="document-icon" aria-hidden="true">
+                PDF
+            </span>
+
+            <span>
+                ${escapeHTML(doc.title)}
+            </span>
+        </a>
+    `;
+};
+
+const renderDocumentsModal = (documents) => {
+    const existing =
+        $("#documentsModal");
+
+    if (existing) {
+        existing.remove();
+    }
+
+    const modal =
+        document.createElement("div");
+
+    modal.id = "documentsModal";
+    modal.className = "documents-modal";
+
+    modal.innerHTML = `
+        <div class="documents-modal-content">
+            <button
+                class="documents-modal-close"
+                type="button"
+            >
+                &times;
+            </button>
+
+            <h3>Doctor Documents</h3>
+
+            ${
+                documents.length
+                    ? `
+                        <div class="document-grid">
+                            ${documents.map(documentItem).join("")}
+                        </div>
+                    `
+                    : `<p>No documents uploaded.</p>`
+            }
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    $(".documents-modal-close", modal)
+        .addEventListener("click", () => {
+            modal.remove();
+        });
+
+    modal.addEventListener("click", (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+};
+
 const pendingDoctorCard = (doctor) => {
     const doctorId =
         getDoctorId(doctor);
@@ -832,13 +992,22 @@ const pendingDoctorCard = (doctor) => {
                     placeholder="Add verification remarks (optional)"
                 ></textarea>
 
-                <button
-                    class="primary-button submit-verification"
-                    type="submit"
-                >
-                    Submit Decision
-                </button>
+                <div class="verification-actions">
+    <button
+        class="view-documents-btn"
+        type="button"
+        data-doctor-id="${escapeHTML(doctorId)}"
+    >
+        View Documents
+    </button>
 
+    <button
+        class="primary-button submit-verification"
+        type="submit"
+    >
+        Submit Decision
+    </button>
+</div>
                 <p
                     class="message form-message"
                     aria-live="polite"
