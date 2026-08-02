@@ -365,15 +365,15 @@ const buildDatesList = (availabilityList, doctor) => {
                 isHoliday,
                 slots: {
                     MORNING: {
-                        capacity: Number(item.morningCapacity ?? doctor.morningCapacity ?? 0),
+                        capacity: Number(item.morningCapacity ?? 0),
                         bookings: Number(item.morningBookings ?? 0)
                     },
                     AFTERNOON: {
-                        capacity: Number(item.afternoonCapacity ?? doctor.afternoonCapacity ?? 0),
+                        capacity: Number(item.afternoonCapacity ?? 0),
                         bookings: Number(item.afternoonBookings ?? 0)
                     },
                     EVENING: {
-                        capacity: Number(item.eveningCapacity ?? doctor.eveningCapacity ?? 0),
+                        capacity: Number(item.eveningCapacity?? 0),
                         bookings: Number(item.eveningBookings ?? 0)
                     }
                 }
