@@ -189,8 +189,8 @@ form.addEventListener("submit", async (event) => {
 
         const normalizedRole = String(data.role || role).toUpperCase();
 
-        const profileSetup;
-        const redirect;
+        let profileSetup;
+        let redirect;
 
         if(normalizedRole==="PATIENT"){
             profileSetup = await fetch(`${domain}/api/patient/profile-status`,{
@@ -201,6 +201,7 @@ form.addEventListener("submit", async (event) => {
                 },
             })
             redirect = await profileSetup.json();
+            redirect = redirect.data.data;
         }else if(normalizedRole==="DOCTOR"){
             profileSetup = await fetch(`${domain}/api/doctor/profile-status`,{
                 method : "GET",
@@ -210,10 +211,11 @@ form.addEventListener("submit", async (event) => {
                 },
             })
             redirect = await profileSetup.json();
+            redirect = redirect.data.data;
         }else{
             redirect = false;
         }
-        
+
         if(redirect === true){
             if(normalizedRole === "PATIENT"){
                 window.location.href = "../home/pat-home.html";
