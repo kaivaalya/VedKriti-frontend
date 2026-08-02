@@ -979,7 +979,8 @@ const joinConference = async (
         );
 
         localStorage.setItem(
-            "conferenceUid"
+            "conferenceUid",
+            conferenceUid
         )
 
         globalThis.location.href =
