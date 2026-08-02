@@ -309,7 +309,24 @@ const consultationActions = (booking, isSearch = false) => {
         status === "CONFIRMED" ||
         status === "BOOKED"
     ) {
+        const conferenceButton =
+            consultationType === "ONLINE"
+                ? `
+                    <button
+                        type="button"
+                        class="join-conference"
+                        data-action="join"
+                        data-booking-id="${escapeHTML(
+                            bookingId
+                        )}"
+                    >
+                        Join Conference
+                    </button>
+                `
+                : "";
+
         return `
+            ${conferenceButton}
             <button
                 type="button"
                 class="start-consultation"
@@ -391,6 +408,7 @@ const consultationCard = (booking, isSearch = false) => {
         booking.patientName ||
         booking.patName ||
         booking.patient?.name ||
+        booking.patID?.name ||
         "Patient";
 
     const slot =
@@ -953,7 +971,7 @@ todayResults.addEventListener(
         const patientId = input.dataset.patientId || "unknown";
 
         const formData = new FormData();
-        formData.append("file", file);
+        formData.append("report", file);
         formData.append("title", "Consultation Report");
         formData.append("category", "PRESCRIPTION");
         formData.append("bookingId", bookingId);
