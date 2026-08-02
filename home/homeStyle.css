@@ -1779,6 +1779,16 @@ footer h2 {
     font-weight: 800;
 }
 
+.date-backend-raw {
+    font-size: 0.7rem;
+    color: var(--muted);
+    background: rgba(21, 25, 26, 0.05);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-family: monospace;
+    word-break: break-all;
+}
+
 .holiday-badge {
     background: var(--danger);
     color: #fff;
@@ -1887,6 +1897,14 @@ footer h2 {
 }
 
 /* Doctor Detail Section */
+.doctor-detail-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+}
+
 .profile-main-info {
     display: flex;
     gap: 1.5rem;

@@ -353,6 +353,7 @@ const buildDatesList = (availabilityList, doctor) => {
             const displayDate = Number.isNaN(d.getTime())
                 ? String(rawDate)
                 : d.toLocaleDateString("en-IN", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
+            const backendDate = String(rawDate);
             const jsDay = Number.isNaN(d.getTime()) ? 1 : d.getDay();
             const dayNum = jsDay === 0 ? 7 : jsDay;
             const isHoliday = String(doctor.holidays || "").includes(String(dayNum));
@@ -360,6 +361,7 @@ const buildDatesList = (availabilityList, doctor) => {
             return {
                 dateStr,
                 displayDate,
+                backendDate,
                 isHoliday,
                 slots: {
                     MORNING: {
@@ -395,6 +397,7 @@ const buildDatesList = (availabilityList, doctor) => {
         datesList.push({
             dateStr: dStr,
             displayDate: d.toLocaleDateString("en-IN", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }),
+            backendDate: d.toISOString(),
             isHoliday,
             slots: {
                 MORNING: {
@@ -449,6 +452,7 @@ const renderDoctorProfileView = (profileData) => {
                                 <h3>${escapeHTML(item.displayDate)}</h3>
                                 ${item.isHoliday ? `<span class="badge holiday-badge">Holiday</span>` : ""}
                             </div>
+                            <p class="date-backend-raw">${escapeHTML(item.backendDate)}</p>
                             <div class="slots-container">
                                 ${["MORNING", "AFTERNOON", "EVENING"].map(slotKey => {
                                     const slotData = item.slots[slotKey];
@@ -502,7 +506,7 @@ const renderDoctorProfileView = (profileData) => {
             <p id="profileBookingMessage" class="message" aria-live="polite"></p>
         </section>
 
-        <section class="doctor-detail-section card">
+        <section class="doctor-detail-section">
             <div class="profile-main-info">
                 ${doctor.photo ? `<img class="doctor-photo-lg" src="${escapeHTML(doctor.photo)}" alt="Dr. ${escapeHTML(doctor.name)}">` : `<div class="doctor-photo-lg placeholder-photo">+</div>`}
                 <div class="profile-details-content">
@@ -522,9 +526,9 @@ const renderDoctorProfileView = (profileData) => {
             </div>
         </section>
 
-        ${experiencesList.length ? `
-            <section class="experience-timeline-section">
-                <h2>🏥 Experience & Hospital Work</h2>
+        <section class="experience-timeline-section">
+            <h2>🏥 Experience & Hospital Work</h2>
+            ${experiencesList.length ? `
                 <div class="timeline-container">
                     ${experiencesList.map((exp, index) => {
                         const side = index % 2 === 0 ? "left" : "right";
@@ -542,8 +546,12 @@ const renderDoctorProfileView = (profileData) => {
                         `;
                     }).join("")}
                 </div>
-            </section>
-        ` : ""}
+            ` : `
+                <div class="no-feedback-state">
+                    <p>No experience records available for this doctor.</p>
+                </div>
+            `}
+        </section>
 
         ${feedbackList.length ? `
             <section class="patient-reviews-section">
