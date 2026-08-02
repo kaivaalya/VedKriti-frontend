@@ -945,6 +945,8 @@ const joinConference = async (
             credentials.token ||
             credentials.rtcToken;
 
+        const conferenceUid = credentials.uid;
+
         if (
             !channel ||
             !conferenceToken
@@ -975,6 +977,10 @@ const joinConference = async (
             "currentConsultationBookingId",
             bookingId
         );
+
+        localStorage.setItem(
+            "conferenceUid"
+        )
 
         globalThis.location.href =
             "../conference/index.html";
