@@ -933,6 +933,11 @@ const joinConference = async (
         const credentials =
             data.data || data;
 
+        console.log(
+            "Conference credentials received:",
+            credentials
+        );
+
         const appId =
             credentials.appId ||
             credentials.agoraAppId;
@@ -945,23 +950,25 @@ const joinConference = async (
             credentials.token ||
             credentials.rtcToken;
 
-        const conferenceUid = credentials.uid;
+        const conferenceUid =
+            Number(credentials.uid);
 
         if (
+            !appId ||
             !channel ||
-            !conferenceToken
+            !conferenceToken ||
+            !Number.isInteger(conferenceUid) ||
+            conferenceUid <= 0
         ) {
             throw new Error(
-                "The backend did not return a channel and token."
+                "The backend returned incomplete Agora credentials."
             );
         }
 
-        if (appId) {
-            localStorage.setItem(
-                "agoraAppId",
-                appId
-            );
-        }
+        localStorage.setItem(
+            "agoraAppId",
+            appId
+        );
 
         localStorage.setItem(
             "conferenceChannel",
@@ -974,14 +981,19 @@ const joinConference = async (
         );
 
         localStorage.setItem(
+            "conferenceUid",
+            String(conferenceUid)
+        );
+
+        localStorage.setItem(
             "currentConsultationBookingId",
             bookingId
         );
 
-        localStorage.setItem(
-            "conferenceUid",
-            conferenceUid
-        )
+        console.log(
+            "Saved conference UID:",
+            localStorage.getItem("conferenceUid")
+        );
 
         globalThis.location.href =
             "../conference/index.html";
