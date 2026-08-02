@@ -1,25 +1,302 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap");
-:root{--ink:#15191a;--paper:#f4f1eb;--surface:#fff;--accent:#2eb9c2;--accent-light:#62d3d9;--muted:#707878;--border:rgba(255,255,255,.14);--danger:#d84a3a}
-*{box-sizing:border-box;margin:0;padding:0}
-[hidden]{display:none!important}
-body{min-width:280px;min-height:100vh;color:#fff;background:#101718;font-family:"DM Sans",Arial,sans-serif}
-.conference-header{height:76px;display:flex;align-items:center;justify-content:space-between;padding:.75rem clamp(1rem,4vw,3rem);background:var(--paper);border-bottom:1px solid rgba(21,25,26,.14);color:var(--ink)}
-.conference-header img{width:125px;height:auto}
-.conference-header div{display:flex;align-items:center;gap:.55rem;font-size:.8rem;font-weight:700}
-.live-dot{width:9px;height:9px;background:var(--accent);border-radius:50%;box-shadow:0 0 0 5px rgba(46,185,194,.14)}
-.conference-main{min-height:calc(100vh - 76px);display:grid;place-items:center;padding:clamp(1rem,3vw,2rem)}
-.conference-intro{width:min(620px,100%);padding:clamp(1.5rem,5vw,3.5rem);background:var(--paper);color:var(--ink);border-top:5px solid var(--accent);box-shadow:0 24px 60px rgba(0,0,0,.3)}
-.eyebrow{margin-bottom:.65rem;color:#168d97;font-size:.72rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
-.conference-intro h1{max-width:520px;font-size:clamp(2rem,6vw,3.4rem);line-height:1.02;letter-spacing:-.055em}
-.conference-intro p:not(.eyebrow){margin:1rem 0 1.75rem;color:var(--muted);line-height:1.6}
-button{min-height:46px;padding:.75rem 1.15rem;color:var(--ink);background:var(--accent);border:0;border-radius:4px;cursor:pointer;font:800 .82rem "DM Sans",sans-serif;transition:180ms ease}
-button:hover{background:var(--accent-light);transform:translateY(-2px)}
-#stream-wrapper{width:100%;height:calc(100vh - 116px);display:grid;grid-template-rows:minmax(0,1fr) auto;gap:1rem}
-#video-stream{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr));gap:1rem;min-height:0}
-.video-container{min-height:260px;overflow:hidden;background:#202a2c;border:1px solid var(--border);box-shadow:0 15px 35px rgba(0,0,0,.22)}
-.video-player{width:100%;height:100%}
-#stream-controls{display:flex;justify-content:center;flex-wrap:wrap;gap:.6rem;padding:.8rem;background:rgba(255,255,255,.06);border:1px solid var(--border);backdrop-filter:blur(12px)}
-#leave-btn.danger{color:#fff;background:var(--danger)}
-#conference-error{min-height:1.3rem;margin-top:.75rem;color:#ff8f83;text-align:center}
-@media(max-width:650px){.conference-header{height:66px}.conference-header img{width:105px}.conference-main{min-height:calc(100vh - 66px);padding:.7rem}#stream-wrapper{height:calc(100vh - 82px)}#stream-controls{display:grid;grid-template-columns:1fr}#stream-controls button{width:100%}.video-container{min-height:220px}}
-@media(prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
+@import url(
+    "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
+);
+
+:root {
+    --ink: #15191a;
+    --paper: #f4f1eb;
+    --accent: #2eb9c2;
+    --accent-light: #62d3d9;
+    --muted: #707878;
+    --border: rgba(255, 255, 255, 0.14);
+    --danger: #d84a3a;
+    --video-background: #050808;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+body {
+    min-width: 280px;
+    min-height: 100vh;
+    color: #ffffff;
+    background: #101718;
+    font-family: "DM Sans", Arial, sans-serif;
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.conference-header {
+    height: 76px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem clamp(1rem, 4vw, 3rem);
+    color: var(--ink);
+    background: var(--paper);
+    border-bottom: 1px solid rgba(21, 25, 26, 0.14);
+}
+
+.conference-header img {
+    width: 125px;
+    height: auto;
+}
+
+.conference-status {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.live-dot {
+    width: 9px;
+    height: 9px;
+    flex-shrink: 0;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow:
+        0 0 0 5px rgba(46, 185, 194, 0.14);
+}
+
+/* =========================================================
+   MAIN
+========================================================= */
+
+.conference-main {
+    min-height: calc(100vh - 76px);
+    display: grid;
+    place-items: center;
+    padding: clamp(1rem, 3vw, 2rem);
+}
+
+/* =========================================================
+   JOIN PANEL
+========================================================= */
+
+.conference-intro {
+    width: min(620px, 100%);
+    padding: clamp(1.5rem, 5vw, 3.5rem);
+    color: var(--ink);
+    background: var(--paper);
+    border-top: 5px solid var(--accent);
+    box-shadow:
+        0 24px 60px rgba(0, 0, 0, 0.3);
+}
+
+.eyebrow {
+    margin-bottom: 0.65rem;
+    color: #168d97;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.conference-intro h1 {
+    max-width: 520px;
+    font-size: clamp(2rem, 6vw, 3.4rem);
+    line-height: 1.02;
+    letter-spacing: -0.055em;
+}
+
+.conference-intro p:not(.eyebrow) {
+    margin: 1rem 0 1.75rem;
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+button {
+    min-height: 46px;
+    padding: 0.75rem 1.15rem;
+    color: var(--ink);
+    background: var(--accent);
+    border: 0;
+    border-radius: 4px;
+    cursor: pointer;
+    font: 800 0.82rem "DM Sans", sans-serif;
+    transition:
+        background 180ms ease,
+        transform 180ms ease;
+}
+
+button:hover:not(:disabled) {
+    background: var(--accent-light);
+    transform: translateY(-2px);
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+/* =========================================================
+   VIDEO STREAM
+========================================================= */
+
+#stream-wrapper {
+    width: min(1500px, 100%);
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 1rem;
+}
+
+#video-stream {
+    width: 100%;
+    display: grid;
+    grid-template-columns:
+        repeat(auto-fit, minmax(min(450px, 100%), 1fr));
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+/*
+ * Every participant tile maintains a 16:9 ratio.
+ */
+.video-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: var(--video-background);
+    border: 1px solid var(--border);
+    box-shadow:
+        0 15px 35px rgba(0, 0, 0, 0.22);
+}
+
+.video-player {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--video-background);
+}
+
+/*
+ * Agora creates additional div and video elements.
+ */
+.video-player > div {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.video-player video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    background: var(--video-background);
+}
+
+/* =========================================================
+   CONTROLS
+========================================================= */
+
+#stream-controls {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    padding: 0.8rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+}
+
+#leave-btn.danger {
+    color: #ffffff;
+    background: var(--danger);
+}
+
+#leave-btn.danger:hover:not(:disabled) {
+    background: #eb5948;
+}
+
+#conference-error {
+    min-height: 1.3rem;
+    margin-top: 0.75rem;
+    color: #ff8f83;
+    text-align: center;
+}
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 1000px) {
+    #video-stream {
+        grid-template-columns: 1fr;
+    }
+
+    .video-container {
+        width: min(900px, 100%);
+        margin-inline: auto;
+    }
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 650px) {
+    .conference-header {
+        height: 66px;
+        padding-inline: 0.8rem;
+    }
+
+    .conference-header img {
+        width: 105px;
+    }
+
+    .conference-status {
+        font-size: 0.72rem;
+    }
+
+    .conference-main {
+        min-height: calc(100vh - 66px);
+        padding: 0.7rem;
+    }
+
+    #stream-wrapper {
+        width: 100%;
+    }
+
+    #video-stream {
+        grid-template-columns: 1fr;
+    }
+
+    .video-container {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+    }
+
+    #stream-controls {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    #stream-controls button {
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        transition-duration: 0.01ms !important;
+    }
+}

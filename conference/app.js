@@ -1,3 +1,7 @@
+/* =========================================================
+   CONFERENCE CREDENTIALS
+========================================================= */
+
 const APP_ID =
     localStorage.getItem("agoraAppId")?.trim();
 
@@ -15,37 +19,78 @@ const UID =
         ? null
         : Number(storedUID);
 
+/* =========================================================
+   AGORA CLIENT
+========================================================= */
+
 const client = AgoraRTC.createClient({
     mode: "rtc",
     codec: "vp8"
 });
 
 let localTracks = [];
+
 const remoteUsers = {};
 
 let eventListenersRegistered = false;
 let isJoined = false;
+
+/*
+ * "contain" preserves the entire video frame.
+ * It may produce black bars when the camera ratio
+ * does not match the 16:9 container.
+ */
+const LOCAL_VIDEO_OPTIONS = {
+    fit: "contain",
+    mirror: true
+};
+
+const REMOTE_VIDEO_OPTIONS = {
+    fit: "contain",
+    mirror: false
+};
+
+/* =========================================================
+   DOM ELEMENTS
+========================================================= */
+
+const joinButton =
+    document.getElementById("join-btn");
+
+const leaveButton =
+    document.getElementById("leave-btn");
+
+const microphoneButton =
+    document.getElementById("mic-btn");
+
+const cameraButton =
+    document.getElementById("cam-btn");
+
+const joinPanel =
+    document.getElementById("join-panel");
+
+const streamWrapper =
+    document.getElementById("stream-wrapper");
+
+const videoStream =
+    document.getElementById("video-stream");
+
+const errorElement =
+    document.getElementById("conference-error");
+
+const roomStatusElement =
+    document.getElementById("room-status");
 
 /* =========================================================
    HELPER FUNCTIONS
 ========================================================= */
 
 const showConferenceError = (message = "") => {
-    const errorElement =
-        document.getElementById("conference-error");
-
-    if (errorElement) {
-        errorElement.textContent = message;
-    }
+    errorElement.textContent = message;
 };
 
 const setRoomStatus = (message) => {
-    const statusElement =
-        document.getElementById("room-status");
-
-    if (statusElement) {
-        statusElement.textContent = message;
-    }
+    roomStatusElement.textContent = message;
 };
 
 const setButtonLoading = (
@@ -104,11 +149,38 @@ const validateCredentials = () => {
     }
 };
 
+const createVideoContainer = (uid) => {
+    document
+        .getElementById(`user-container-${uid}`)
+        ?.remove();
+
+    const container = document.createElement("div");
+    container.className = "video-container";
+    container.id = `user-container-${uid}`;
+
+    const player = document.createElement("div");
+    player.className = "video-player";
+    player.id = `user-${uid}`;
+
+    container.appendChild(player);
+    videoStream.appendChild(container);
+
+    return player.id;
+};
+
+const resetControlButtons = () => {
+    microphoneButton.textContent =
+        "Mute microphone";
+
+    cameraButton.textContent =
+        "Turn camera off";
+};
+
 /* =========================================================
    REMOTE USER EVENTS
 ========================================================= */
 
-const handleUserJoined = async (
+const handleUserPublished = async (
     user,
     mediaType
 ) => {
@@ -121,33 +193,12 @@ const handleUserJoined = async (
         );
 
         if (mediaType === "video") {
-            document
-                .getElementById(
-                    `user-container-${user.uid}`
-                )
-                ?.remove();
-
-            const player = `
-                <div
-                    class="video-container"
-                    id="user-container-${user.uid}"
-                >
-                    <div
-                        class="video-player"
-                        id="user-${user.uid}"
-                    ></div>
-                </div>
-            `;
-
-            document
-                .getElementById("video-stream")
-                .insertAdjacentHTML(
-                    "beforeend",
-                    player
-                );
+            const playerId =
+                createVideoContainer(user.uid);
 
             user.videoTrack?.play(
-                `user-${user.uid}`
+                playerId,
+                REMOTE_VIDEO_OPTIONS
             );
         }
 
@@ -163,6 +214,19 @@ const handleUserJoined = async (
         showConferenceError(
             "Could not load the other participant's media."
         );
+    }
+};
+
+const handleUserUnpublished = (
+    user,
+    mediaType
+) => {
+    if (mediaType === "video") {
+        document
+            .getElementById(
+                `user-container-${user.uid}`
+            )
+            ?.remove();
     }
 };
 
@@ -183,7 +247,12 @@ const registerClientEvents = () => {
 
     client.on(
         "user-published",
-        handleUserJoined
+        handleUserPublished
+    );
+
+    client.on(
+        "user-unpublished",
+        handleUserUnpublished
     );
 
     client.on(
@@ -203,8 +272,8 @@ const joinAndDisplayLocalStream = async () => {
     registerClientEvents();
 
     /*
-     * UID must be the same UID used by the backend
-     * while generating the Agora token.
+     * UID must match the UID used by the backend
+     * when generating the Agora token.
      *
      * Doctor  -> UID 1
      * Patient -> UID 2
@@ -223,48 +292,35 @@ const joinAndDisplayLocalStream = async () => {
             await AgoraRTC
                 .createMicrophoneAndCameraTracks();
 
-        const player = `
-            <div
-                class="video-container"
-                id="user-container-${assignedUID}"
-            >
-                <div
-                    class="video-player"
-                    id="user-${assignedUID}"
-                ></div>
-            </div>
-        `;
-
-        document
-            .getElementById("video-stream")
-            .insertAdjacentHTML(
-                "beforeend",
-                player
-            );
+        const localPlayerId =
+            createVideoContainer(assignedUID);
 
         localTracks[1].play(
-            `user-${assignedUID}`
+            localPlayerId,
+            LOCAL_VIDEO_OPTIONS
         );
 
         await client.publish(localTracks);
     } catch (error) {
-        /*
-         * If camera or microphone creation fails after
-         * joining, leave the channel before rethrowing.
-         */
+        for (const track of localTracks) {
+            track.stop();
+            track.close();
+        }
+
+        localTracks = [];
+
         if (isJoined) {
             await client.leave();
             isJoined = false;
         }
+
+        videoStream.innerHTML = "";
 
         throw error;
     }
 };
 
 const joinStream = async () => {
-    const joinButton =
-        document.getElementById("join-btn");
-
     if (isJoined) {
         return;
     }
@@ -284,13 +340,8 @@ const joinStream = async () => {
     try {
         await joinAndDisplayLocalStream();
 
-        document
-            .getElementById("join-panel")
-            .hidden = true;
-
-        document
-            .getElementById("stream-wrapper")
-            .hidden = false;
+        joinPanel.hidden = true;
+        streamWrapper.hidden = false;
 
         setRoomStatus(
             "Consultation live"
@@ -323,9 +374,6 @@ const joinStream = async () => {
 ========================================================= */
 
 const leaveAndRemoveLocalStream = async () => {
-    const leaveButton =
-        document.getElementById("leave-btn");
-
     setButtonLoading(
         leaveButton,
         "Leaving...",
@@ -352,17 +400,12 @@ const leaveAndRemoveLocalStream = async () => {
                 delete remoteUsers[uid];
             });
 
-        document
-            .getElementById("video-stream")
-            .innerHTML = "";
+        videoStream.innerHTML = "";
 
-        document
-            .getElementById("join-panel")
-            .hidden = false;
+        streamWrapper.hidden = true;
+        joinPanel.hidden = false;
 
-        document
-            .getElementById("stream-wrapper")
-            .hidden = true;
+        resetControlButtons();
 
         setRoomStatus(
             "Consultation ended"
@@ -387,10 +430,10 @@ const leaveAndRemoveLocalStream = async () => {
 };
 
 /* =========================================================
-   MICROPHONE AND CAMERA CONTROLS
+   MICROPHONE CONTROL
 ========================================================= */
 
-const toggleMic = async (event) => {
+const toggleMic = async () => {
     const microphoneTrack =
         localTracks[0];
 
@@ -403,6 +446,8 @@ const toggleMic = async (event) => {
     }
 
     try {
+        showConferenceError("");
+
         const shouldMute =
             !microphoneTrack.muted;
 
@@ -410,7 +455,7 @@ const toggleMic = async (event) => {
             shouldMute
         );
 
-        event.currentTarget.textContent =
+        microphoneButton.textContent =
             shouldMute
                 ? "Unmute microphone"
                 : "Mute microphone";
@@ -426,7 +471,11 @@ const toggleMic = async (event) => {
     }
 };
 
-const toggleCam = async (event) => {
+/* =========================================================
+   CAMERA CONTROL
+========================================================= */
+
+const toggleCam = async () => {
     const cameraTrack =
         localTracks[1];
 
@@ -439,6 +488,8 @@ const toggleCam = async (event) => {
     }
 
     try {
+        showConferenceError("");
+
         const shouldMute =
             !cameraTrack.muted;
 
@@ -446,7 +497,7 @@ const toggleCam = async (event) => {
             shouldMute
         );
 
-        event.currentTarget.textContent =
+        cameraButton.textContent =
             shouldMute
                 ? "Turn camera on"
                 : "Turn camera off";
@@ -466,37 +517,29 @@ const toggleCam = async (event) => {
    EVENT LISTENERS
 ========================================================= */
 
-document
-    .getElementById("join-btn")
-    .addEventListener(
-        "click",
-        joinStream
-    );
+joinButton.addEventListener(
+    "click",
+    joinStream
+);
 
-document
-    .getElementById("leave-btn")
-    .addEventListener(
-        "click",
-        leaveAndRemoveLocalStream
-    );
+leaveButton.addEventListener(
+    "click",
+    leaveAndRemoveLocalStream
+);
 
-document
-    .getElementById("mic-btn")
-    .addEventListener(
-        "click",
-        toggleMic
-    );
+microphoneButton.addEventListener(
+    "click",
+    toggleMic
+);
 
-document
-    .getElementById("cam-btn")
-    .addEventListener(
-        "click",
-        toggleCam
-    );
+cameraButton.addEventListener(
+    "click",
+    toggleCam
+);
 
 /*
- * Close tracks if the user closes or refreshes the page.
- * client.leave() cannot reliably be awaited during unload.
+ * Stop hardware tracks if the user closes
+ * or reloads the page.
  */
 window.addEventListener(
     "beforeunload",
