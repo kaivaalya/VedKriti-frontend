@@ -6,10 +6,10 @@ import { domain } from "../config.js";
  */
 const ENDPOINTS = {
     doctorDocuments: (doctorId) =>
+    
         `${domain}/api/doctors/${
             encodeURIComponent(doctorId)
         }/documents`,
-
     statistics:
         `${domain}/api/admin/dashboard`,
 

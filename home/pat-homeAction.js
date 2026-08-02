@@ -821,20 +821,53 @@ $("#consultationResults").addEventListener("click", async (event) => {
    TAB 3: PAST BOOKINGS & FEEDBACK
 ========================================================= */
 
-const renderRatingStars = (rating, interactive = false) => {
-    const r = Math.max(0, Math.min(5, Number(rating) || 0));
-    return Array.from({ length: 5 }, (_, i) => {
-        const starNum = i + 1;
-        const src = starNum <= r ? YELLOW_STAR : BLACK_STAR;
-        if (!interactive) {
-            return `<img class="star-img" src="${src}" alt="star">`;
+const renderRatingStars = (
+    rating,
+    interactive = false
+) => {
+    const selectedRating = Math.max(
+        0,
+        Math.min(5, Number(rating) || 0)
+    );
+
+    return Array.from(
+        { length: 5 },
+        (_, index) => {
+            const starNumber = index + 1;
+
+            const source =
+                starNumber <= selectedRating
+                    ? YELLOW_STAR
+                    : BLACK_STAR;
+
+            if (!interactive) {
+                return `
+                    <img
+                        class="star-img"
+                        src="${source}"
+                        alt=""
+                        aria-hidden="true"
+                    >
+                `;
+            }
+
+            return `
+                <button
+                    type="button"
+                    class="star-btn"
+                    data-rating="${starNumber}"
+                    aria-label="Give ${starNumber} star${starNumber === 1 ? "" : "s"}"
+                >
+                    <img
+                        class="star-img"
+                        src="${source}"
+                        alt=""
+                        aria-hidden="true"
+                    >
+                </button>
+            `;
         }
-        return `
-            <button type="button" class="star-btn" data-rating="${starNum}" aria-label="${starNum} stars">
-                <img class="star-img" src="${src}" alt="star">
-            </button>
-        `;
-    }).join("");
+    ).join("");
 };
 
 const renderPastCard = (booking) => {
