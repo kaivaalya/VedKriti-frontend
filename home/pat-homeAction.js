@@ -467,6 +467,10 @@ const renderDoctorProfileView = (profileData) => {
                                                     ${escapeHTML(statusText)}
                                                 </span>
                                             </div>
+                                            <div class="slot-capacity-info">
+                                                <span class="capacity-label">Capacity: ${slotData.capacity}</span>
+                                                <span class="booked-label">Booked: ${slotData.bookings}</span>
+                                            </div>
                                             <div class="consultation-radio-group">
                                                 <label class="radio-option">
                                                     <input type="radio" name="${inputName}" value="ONLINE" checked>
@@ -560,7 +564,14 @@ const renderDoctorProfileView = (profileData) => {
                     }).join("")}
                 </div>
             </section>
-        ` : ""}
+        ` : `
+            <section class="patient-reviews-section">
+                <h2>⭐ Patient Feedback & Reviews</h2>
+                <div class="no-feedback-state">
+                    <p>No patient reviews yet. Be the first to consult and leave a review!</p>
+                </div>
+            </section>
+        `}
     `;
 
     $("#backToSearch").addEventListener("click", () => {

@@ -136,6 +136,14 @@ main {
     width: 100%;
 }
 
+#doctorSearchContainer[hidden] {
+    display: none !important;
+}
+
+#doctorProfileContainer[hidden] {
+    display: none !important;
+}
+
 @media (max-width: 900px) {
     #doctorSearchContainer {
         grid-template-columns: 1fr;
@@ -1825,6 +1833,29 @@ footer h2 {
     color: #874b00;
 }
 
+.slot-capacity-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.72rem;
+    color: var(--muted);
+    padding: 0.15rem 0.2rem;
+    border-top: 1px dashed var(--border);
+    margin-top: 0.1rem;
+}
+
+.slot-capacity-info span {
+    font-weight: 700;
+}
+
+.slot-capacity-info .capacity-label {
+    color: var(--accent-dark);
+}
+
+.slot-capacity-info .booked-label {
+    color: var(--warning);
+}
+
 .consultation-radio-group {
     display: flex;
     gap: 1rem;
@@ -2033,6 +2064,7 @@ footer h2 {
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 1.5rem;
+    box-shadow: var(--shadow);
 }
 
 .reviews-grid {
@@ -2062,6 +2094,17 @@ footer h2 {
     font-weight: 700;
     color: var(--warning);
     font-size: 0.85rem;
+}
+
+.no-feedback-state {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--muted);
+    font-size: 0.92rem;
+    background: var(--soft);
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    margin-top: 1rem;
 }
 
 /* Upcoming & Past Booking Cards */
