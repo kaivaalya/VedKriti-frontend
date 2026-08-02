@@ -22,38 +22,33 @@
     <main>
         <div class="tabs_panel">
             <section id="find" aria-labelledby="tab-1">
-                <aside id="filter">
-                    <form id="signinForm">
-                        <div class="form-heading">
-                            <p class="eyebrow">Doctor discovery</p>
-                            <h1>Find a doctor</h1>
-                            <p>Search by location, speciality, facility, date or slot.</p>
-                        </div>
-                        <div class="form-group">
-                            <label for="city">City</label>
-                            <input id="city" name="city" type="text" placeholder="e.g. Gwalior">
-                        </div>
-                        <div class="form-group">
-                            <label for="speciality">Speciality</label>
-                            <input id="speciality" name="speciality" type="text" placeholder="e.g. Cardiologist">
-                        </div>
-                        <div class="form-group">
-                            <label for="facility">Facility</label>
-                            <input id="facility" name="facility" type="text" placeholder="Clinic or hospital">
-                        </div>
-                        <div class="form-group">
-                            <label for="name">Doctor name</label>
-                            <input id="name" name="name" type="text" placeholder="Doctor's name">
-                        </div>
-                        <div class="filter-row">
+                <div id="doctorSearchContainer">
+                    <aside id="filter">
+                        <form id="signinForm">
+                            <div class="form-heading">
+                                <p class="eyebrow">Doctor discovery</p>
+                                <h1>Find a doctor</h1>
+                                <p>Search by location, speciality, facility, date or slot.</p>
+                            </div>
                             <div class="form-group">
-                                <label for="date">Date</label>
-                                <input id="date" name="date" type="date">
+                                <label for="city">City</label>
+                                <input id="city" name="city" type="text" placeholder="e.g. Gwalior">
+                            </div>
+                            <div class="form-group">
+                                <label for="speciality">Speciality</label>
+                                <input id="speciality" name="speciality" type="text" placeholder="e.g. Cardiologist">
+                            </div>
+                            <div class="form-group">
+                                <label for="facility">Facility</label>
+                                <input id="facility" name="facility" type="text" placeholder="Clinic or hospital name">
+                            </div>
+                            <div class="form-group">
+                                <label for="name">Doctor name</label>
+                                <input id="name" name="name" type="text" placeholder="Doctor's name">
                             </div>
                             <div class="filter-row price-filter-row">
                                 <div class="form-group">
                                     <label for="minPrice">Minimum price</label>
-
                                     <input
                                         id="minPrice"
                                         name="minPrice"
@@ -66,7 +61,6 @@
 
                                 <div class="form-group">
                                     <label for="maxPrice">Maximum price</label>
-
                                     <input
                                         id="maxPrice"
                                         name="maxPrice"
@@ -81,7 +75,6 @@
                             <div class="filter-row">
                                 <div class="form-group">
                                     <label for="minRating">Minimum rating</label>
-
                                     <select id="minRating" name="minRating">
                                         <option value="">Any rating</option>
                                         <option value="1">1 star and above</option>
@@ -94,7 +87,6 @@
 
                                 <div class="form-group">
                                     <label for="date">Date</label>
-
                                     <input
                                         id="date"
                                         name="date"
@@ -102,19 +94,21 @@
                                     >
                                 </div>
                             </div>
-                        </div>
-                        <p id="err" class="error-message" role="alert"></p>
-                        <button id="search" type="submit">Search Doctors</button>
-                    </form>
-                </aside>
+                            <p id="err" class="error-message" role="alert"></p>
+                            <button id="search" type="submit">Search Doctors</button>
+                        </form>
+                    </aside>
 
-                <div id="searchResults" class="result-list" aria-live="polite">
-                    <div class="empty-state">
-                        <div class="empty-state-icon">+</div>
-                        <h2>Search for a doctor</h2>
-                        <p>Your matching doctors will appear here.</p>
+                    <div id="searchResults" class="result-list" aria-live="polite">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">+</div>
+                            <h2>Search for a doctor</h2>
+                            <p>Your matching doctors will appear here.</p>
+                        </div>
                     </div>
                 </div>
+
+                <div id="doctorProfileContainer" class="doctor-profile-container" hidden></div>
             </section>
 
             <section id="consultations" class="dashboard-panel" aria-labelledby="tab-2" hidden>

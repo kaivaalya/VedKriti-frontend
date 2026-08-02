@@ -2,82 +2,37 @@ import { domain } from "../config.js";
 
 /* =========================================================
    API ENDPOINTS
-
-   Change only these paths if your backend routes are different.
 ========================================================= */
 
 const ENDPOINTS = {
-    findDoctor:
-        `${domain}/api/doctor/find-doctor`,
-
-    bookDoctor:
-        `${domain}/api/booking/book-doctor`,
-
-    upcoming:
-        `${domain}/api/booking/patient-bookings`,
-
-    past:
-        `${domain}/api/booking/patient-bookings`,
-
-    reports:
-        `${domain}/api/report/get-reports`,
-
-    feedback: (bookingId) =>
-        `${domain}/api/booking/take-feedback?id=${
-            encodeURIComponent(bookingId)
-        }`,
-
-    conference: (bookingId) =>
-        `${domain}/api/booking/agora-token?bookingId=${
-            encodeURIComponent(bookingId)
-        }`
+    findDoctor: `${domain}/api/doctor/find-doctor`,
+    doctorProfile: (id) => `${domain}/api/doctor/profile/${encodeURIComponent(id)}`,
+    bookDoctor: (id, consultationType) =>
+        `${domain}/api/booking/book-doctor?id=${encodeURIComponent(id)}&consultationType=${encodeURIComponent(consultationType)}`,
+    upcoming: `${domain}/api/booking/patient-bookings`,
+    past: `${domain}/api/booking/patient-bookings`,
+    agoraToken: (bookingId) =>
+        `${domain}/api/booking/agora-token?bookingId=${encodeURIComponent(bookingId)}`,
+    takeFeedback: (bookingId) =>
+        `${domain}/api/booking/take-feedback?id=${encodeURIComponent(bookingId)}`,
+    getReports: `${domain}/api/report/get-reports`
 };
 
 /* =========================================================
-   CONSTANTS
+   CONSTANTS & UTILS
 ========================================================= */
 
-const BLACK_STAR =
-    "../media/bstar.png";
+const BLACK_STAR = "../media/bstar.png";
+const YELLOW_STAR = "../media/ystar.png";
 
-const YELLOW_STAR =
-    "../media/ystar.png";
+const $ = (selector, parent = document) => parent.querySelector(selector);
+const $$ = (selector, parent = document) => [...parent.querySelectorAll(selector)];
 
-/*
- * Stores the doctor and slot selected by the patient
- * before the booking request is submitted.
- */
-let selectedBooking = null;
+const getToken = () => localStorage.getItem("token") || "";
 
-/* =========================================================
-   GENERAL HELPER FUNCTIONS
-========================================================= */
-
-const $ = (
-    selector,
-    parent = document
-) => parent.querySelector(selector);
-
-const $$ = (
-    selector,
-    parent = document
-) => [...parent.querySelectorAll(selector)];
-
-const getToken = () =>
-    localStorage.getItem("token") || "";
-
-const authHeaders = (
-    includeJSON = false
-) => ({
-    Authorization:
-        `Bearer ${getToken()}`,
-
-    ...(includeJSON
-        ? {
-            "Content-Type":
-                "application/json"
-        }
-        : {})
+const authHeaders = (includeJSON = false) => ({
+    Authorization: `Bearer ${getToken()}`,
+    ...(includeJSON ? { "Content-Type": "application/json" } : {})
 });
 
 const escapeHTML = (value) =>
@@ -89,2175 +44,942 @@ const escapeHTML = (value) =>
         .replaceAll("'", "&#039;");
 
 const readJSON = async (response) => {
-    const contentType =
-        response.headers.get(
-            "content-type"
-        ) || "";
-
-    if (
-        !contentType.includes(
-            "application/json"
-        )
-    ) {
-        throw new Error(
-            "The server returned an invalid response."
-        );
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+        const text = await response.text();
+        throw new Error(text || "The server returned an invalid response.");
     }
-
     return response.json();
 };
 
-const extractArray = (
-    responseData,
-    possibleKeys
-) => {
-    if (Array.isArray(responseData)) {
-        return responseData;
-    }
-
-    if (
-        Array.isArray(
-            responseData?.data
-        )
-    ) {
-        return responseData.data;
-    }
-
-    for (const key of possibleKeys) {
-        if (
-            Array.isArray(
-                responseData?.[key]
-            )
-        ) {
-            return responseData[key];
-        }
-
-        if (
-            Array.isArray(
-                responseData?.data?.[key]
-            )
-        ) {
-            return responseData.data[key];
-        }
-    }
-
-    return [];
-};
-
-const setMessage = (
-    element,
-    text,
-    state = ""
-) => {
-    if (!element) {
-        return;
-    }
-
+const setMessage = (element, text, state = "") => {
+    if (!element) return;
     element.textContent = text;
-
-    element.className =
-        `message${
-            state ? ` ${state}` : ""
-        }`;
+    element.className = `message${state ? ` ${state}` : ""}`;
 };
 
 const getTodayDate = () => {
-    const today =
-        new Date();
-
-    const year =
-        today.getFullYear();
-
-    const month =
-        String(
-            today.getMonth() + 1
-        ).padStart(2, "0");
-
-    const day =
-        String(
-            today.getDate()
-        ).padStart(2, "0");
-
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
 };
 
 const formatDate = (value) => {
-    if (!value) {
-        return "Date not provided";
-    }
-
-    const dateValue =
-        String(value).slice(0, 10);
-
-    const date =
-        new Date(
-            `${dateValue}T00:00:00`
-        );
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-        return String(value);
-    }
-
-    return date.toLocaleDateString(
-        "en-IN",
-        {
-            day: "2-digit",
-            month: "short",
-            year: "numeric"
-        }
-    );
+    if (!value) return "N/A";
+    const dateValue = String(value).slice(0, 10);
+    const date = new Date(`${dateValue}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+    });
 };
 
 const formatPrice = (price) => {
-    const number =
-        Number(price);
-
-    if (
-        !Number.isFinite(number)
-    ) {
-        return "Fee not provided";
-    }
-
-    return new Intl.NumberFormat(
-        "en-IN",
-        {
-            style: "currency",
-            currency: "INR",
-            maximumFractionDigits: 0
-        }
-    ).format(number);
+    const number = Number(price);
+    if (!Number.isFinite(number)) return "N/A";
+    return new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        maximumFractionDigits: 0
+    }).format(number);
 };
 
 /* =========================================================
    TAB SWITCHING
 ========================================================= */
 
-const tabContainer =
-    $(".tabs-container");
-
-const panels =
-    $$(".tabs_panel > section");
+const tabContainer = $(".tabs-container");
+const panels = $$(".tabs_panel > section");
 
 const openTab = (panelId) => {
     panels.forEach((panel) => {
-        panel.hidden =
-            panel.id !== panelId;
+        panel.hidden = panel.id !== panelId;
     });
 
-    $$("a", tabContainer)
-        .forEach((link) => {
-            const isActive =
-                link.getAttribute("href") ===
-                `#${panelId}`;
+    $$("a", tabContainer).forEach((link) => {
+        const isActive = link.getAttribute("href") === `#${panelId}`;
+        link.classList.toggle("active", isActive);
+        link.setAttribute("aria-selected", String(isActive));
+    });
 
-            link.classList.toggle(
-                "active",
-                isActive
-            );
-
-            link.setAttribute(
-                "aria-selected",
-                String(isActive)
-            );
-        });
-
-    if (
-        panelId ===
-        "consultations"
-    ) {
+    if (panelId === "consultations") {
         loadUpcomingConsultations();
-    }
-
-    if (
-        panelId === "bookings"
-    ) {
+    } else if (panelId === "bookings") {
         loadPastBookings();
-    }
-
-    if (
-        panelId === "reports"
-    ) {
+    } else if (panelId === "reports") {
         loadReports();
     }
 };
 
-tabContainer.addEventListener(
-    "click",
-    (event) => {
-        const link =
-            event.target.closest("a");
-
-        if (!link) {
-            return;
-        }
-
-        const href =
-            link.getAttribute("href");
-
-        if (
-            !href ||
-            !href.startsWith("#")
-        ) {
-            return;
-        }
-
-        event.preventDefault();
-
-        openTab(
-            href.slice(1)
-        );
-    }
-);
+tabContainer.addEventListener("click", (event) => {
+    const link = event.target.closest("a");
+    if (!link) return;
+    const href = link.getAttribute("href");
+    if (!href || !href.startsWith("#")) return;
+    event.preventDefault();
+    openTab(href.slice(1));
+});
 
 /* =========================================================
-   DOCTOR SEARCH HELPERS
+   SEARCH DOCTORS (TAB 1)
 ========================================================= */
 
-const getAvailability = (
-    availability
-) => {
-    const capacity =
-        Number(
-            availability.capacity ??
-            availability.totalCapacity ??
-            0
-        );
-
-    const bookings =
-        Number(
-            availability.bookings ??
-            availability.totalBookings ??
-            0
-        );
-
-    const explicitlyAvailable =
-        availability.available ??
-        availability.availableSeats ??
-        availability.remainingCapacity;
-
-    if (
-        explicitlyAvailable !==
-        undefined
-    ) {
-        return Number(
-            explicitlyAvailable
-        );
-    }
-
-    return capacity - bookings;
-};
-
-const getAvailabilityStatus = (
-    availability
-) => {
-    const remaining =
-        getAvailability(
-            availability
-        );
-
-    return remaining > 0
-        ? `${remaining} available`
-        : "Waiting list";
-};
-
-const availabilityButton = (
-    doctor,
-    availability
-) => {
-    const doctorId =
-        doctor.id ||
-        doctor._id ||
-        doctor.docID ||
-        doctor.doctorID;
-
-    const date =
-        availability.date ||
-        availability.bookingDate ||
-        "";
-
-    const slot =
-        String(
-            availability.slot ||
-            availability.shift ||
-            ""
-        ).toUpperCase();
-
-    const remaining =
-        getAvailability(
-            availability
-        );
-
-    const availabilityText =
-        getAvailabilityStatus(
-            availability
-        );
-
-    return `
-        <button
-            class="slot-button ${
-                remaining > 0
-                    ? "available-slot"
-                    : "waiting-slot"
-            }"
-            type="button"
-            data-action="select-slot"
-            data-doctor-id="${
-                escapeHTML(doctorId)
-            }"
-            data-doctor-name="${
-                escapeHTML(
-                    doctor.name ||
-                    doctor.doctorName ||
-                    "Doctor"
-                )
-            }"
-            data-date="${
-                escapeHTML(date)
-            }"
-            data-slot="${
-                escapeHTML(slot)
-            }"
-            data-availability="${
-                escapeHTML(
-                    availabilityText
-                )
-            }"
-            data-is-waiting="${
-                remaining <= 0
-            }"
-        >
-            <strong>
-                ${escapeHTML(slot)}
-            </strong>
-
-            <span>
-                ${
-                    escapeHTML(
-                        availabilityText
-                    )
-                }
-            </span>
-        </button>
-    `;
-};
-
-const getDoctorRating = (
-    doctor
-) => {
-    const value =
-        Number(
-            doctor.rating ??
-            doctor.averageRating ??
-            0
-        );
-
-    return Math.max(
-        0,
-        Math.min(5, value)
-    );
-};
-
-const doctorCard = (doctor) => {
+const renderDoctorCard = (doctor) => {
+    /*
+      Excluding fields: verified, verificationNote, createdAt, updatedAt, __v, _id from card display text
+    */
     const specialities = [
-        doctor.speciality,
-        doctor.speciality1,
-        doctor.speciality2,
-        doctor.speciality3
-    ].filter(Boolean);
+        doctor.specialization1,
+        doctor.specialization2,
+        doctor.specialization3
+    ].filter(Boolean).join(", ");
+
+    const qualification = [
+        doctor.degreeType,
+        doctor.degreeName,
+        doctor.fieldOfStudy ? `(${doctor.fieldOfStudy})` : "",
+        doctor.institute ? `from ${doctor.institute}` : ""
+    ].filter(Boolean).join(" ");
 
     const location = [
         doctor.facilityName,
+        doctor.address,
         doctor.city,
         doctor.state,
-        doctor.country
+        doctor.country,
+        doctor.pin ? `Pincode: ${doctor.pin}` : ""
     ].filter(Boolean).join(", ");
 
-    const availability =
-        doctor.availability ||
-        doctor.availablity ||
-        doctor.slots ||
-        [];
-
-    const rating =
-        getDoctorRating(doctor);
+    const rating = Math.max(0, Math.min(5, Number(doctor.rating) || 0));
 
     return `
-        <article class="doctor-card">
-            <div class="doctor-summary">
-                ${
-                    doctor.photo ||
-                    doctor.imageUrl
-                        ? `
-                            <img
-                                class="doctor-photo"
-                                src="${
-                                    escapeHTML(
-                                        doctor.photo ||
-                                        doctor.imageUrl
-                                    )
-                                }"
-                                alt="${
-                                    escapeHTML(
-                                        doctor.name ||
-                                        doctor.doctorName ||
-                                        "Doctor"
-                                    )
-                                }"
-                            >
-                        `
-                        : `
-                            <div
-                                class="doctor-photo doctor-photo-placeholder"
-                                aria-hidden="true"
-                            >
-                                +
-                            </div>
-                        `
-                }
-
-                <div class="doctor-information">
-                    <h2>
-                        ${
-                            escapeHTML(
-                                doctor.name ||
-                                doctor.doctorName ||
-                                "Doctor"
-                            )
-                        }
-                    </h2>
-
-                    <p class="doctor-speciality">
-                        ${
-                            escapeHTML(
-                                specialities.join(", ") ||
-                                "Speciality not provided"
-                            )
-                        }
-                    </p>
-
-                    <p class="doctor-location">
-                        ${
-                            escapeHTML(
-                                location ||
-                                "Location not provided"
-                            )
-                        }
-                    </p>
-
-                    <div class="doctor-numbers">
-                        <span>
-                            ${
-                                escapeHTML(
-                                    formatPrice(
-                                        doctor.consultationFee ??
-                                        doctor.fee
-                                    )
-                                )
-                            }
-                        </span>
-
-                        <span>
-                            Rating:
-                            ${
-                                escapeHTML(
-                                    rating.toFixed(1)
-                                )
-                            }/5
-                        </span>
-                    </div>
-
+        <article class="doctor-card" data-doctor-id="${escapeHTML(doctor._id)}">
+            <div class="doctor-card-body">
+                <div class="doctor-photo-wrapper">
                     ${
-                        doctor.about
-                            ? `
-                                <p class="doctor-about">
-                                    ${
-                                        escapeHTML(
-                                            doctor.about
-                                        )
-                                    }
-                                </p>
-                            `
-                            : ""
+                        doctor.photo
+                            ? `<img class="doctor-photo" src="${escapeHTML(doctor.photo)}" alt="${escapeHTML(doctor.name || "Doctor")}">`
+                            : `<div class="doctor-photo placeholder-photo">+</div>`
                     }
                 </div>
+                <div class="doctor-info">
+                    <h2 class="doctor-name">Dr. ${escapeHTML(doctor.name || "Doctor")}</h2>
+                    <p class="doctor-email">📧 ${escapeHTML(doctor.email || "N/A")}</p>
+                    <p class="doctor-designation">💼 ${escapeHTML(doctor.designation || "Doctor")}</p>
+                    ${specialities ? `<p class="doctor-specialities">🩺 <strong>Specialities:</strong> ${escapeHTML(specialities)}</p>` : ""}
+                    ${qualification ? `<p class="doctor-qualification">🎓 <strong>Qualification:</strong> ${escapeHTML(qualification)}</p>` : ""}
+                    ${location ? `<p class="doctor-location">📍 <strong>Location:</strong> ${escapeHTML(location)}</p>` : ""}
+                    <div class="doctor-stats">
+                        <span class="stat-fee">Fee: ${escapeHTML(formatPrice(doctor.consultationFee))}</span>
+                        <span class="stat-rating">⭐ ${rating.toFixed(1)} / 5</span>
+                        <span class="stat-patients">👥 ${escapeHTML(doctor.patientCount ?? 0)} Patients</span>
+                    </div>
+                    ${doctor.about ? `<p class="doctor-about">📝 ${escapeHTML(doctor.about)}</p>` : ""}
+                </div>
             </div>
-
-            <div class="doctor-availability">
-                ${
-                    availability.length
-                        ? availability
-                            .map((item) =>
-                                availabilityButton(
-                                    doctor,
-                                    item
-                                )
-                            )
-                            .join("")
-                        : `
-                            <p class="no-slots">
-                                No availability was returned for this doctor.
-                            </p>
-                        `
-                }
+            <div class="doctor-card-footer">
+                <button class="view-profile-btn" type="button" data-doctor-id="${escapeHTML(doctor._id)}">
+                    View Profile & Book Slot &rarr;
+                </button>
             </div>
         </article>
     `;
 };
 
-const renderDoctors = (
-    doctors
-) => {
-    const searchResults =
-        $("#searchResults");
-
-    if (!doctors.length) {
+const renderDoctors = (doctors) => {
+    const searchResults = $("#searchResults");
+    if (!doctors || !doctors.length) {
         searchResults.innerHTML = `
             <div class="empty-state">
-                <div class="empty-state-icon">
-                    +
-                </div>
-
-                <h2>
-                    No doctors found
-                </h2>
-
-                <p>
-                    Try changing your location,
-                    price or rating filters.
-                </p>
+                <div class="empty-state-icon">+</div>
+                <h2>No doctors found</h2>
+                <p>Try matching with different location, speciality, price or rating filters.</p>
             </div>
         `;
+        return;
+    }
+    searchResults.innerHTML = doctors.map(renderDoctorCard).join("");
+};
 
+$("#signinForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const searchButton = $("#search");
+    const errorElement = $("#err");
+    errorElement.textContent = "";
+
+    const minPriceText = $("#minPrice").value.trim();
+    const maxPriceText = $("#maxPrice").value.trim();
+    const minRatingText = $("#minRating").value;
+
+    const filters = {
+        city: $("#city").value.trim(),
+        specialization: $("#speciality").value.trim(),
+        facilityName: $("#facility").value.trim(),
+        name: $("#name").value.trim(),
+        date: $("#date").value,
+        minFee: minPriceText === "" ? null : Number(minPriceText),
+        maxFee: maxPriceText === "" ? null : Number(maxPriceText),
+        minRating: minRatingText === "" ? null : Number(minRatingText)
+    };
+
+    if (filters.minFee !== null && filters.minFee < 0) {
+        errorElement.textContent = "Minimum price cannot be negative.";
+        return;
+    }
+    if (filters.maxFee !== null && filters.maxFee < 0) {
+        errorElement.textContent = "Maximum price cannot be negative.";
+        return;
+    }
+    if (filters.minFee !== null && filters.maxFee !== null && filters.minFee > filters.maxFee) {
+        errorElement.textContent = "Minimum price cannot be greater than maximum price.";
         return;
     }
 
-    searchResults.innerHTML =
-        doctors
-            .map(doctorCard)
-            .join("");
-};
+    searchButton.disabled = true;
+    searchButton.textContent = "Searching...";
 
-/* =========================================================
-   SEARCH DOCTORS
+    try {
+        const params = new URLSearchParams();
+        if (filters.city) params.set("city", filters.city);
+        if (filters.facilityName) params.set("facilityName", filters.facilityName);
+        if (filters.specialization) params.set("specialization", filters.specialization);
+        if (filters.name) params.set("name", filters.name);
+        if (filters.minFee !== null) params.set("minFee", filters.minFee);
+        if (filters.maxFee !== null) params.set("maxFee", filters.maxFee);
+        if (filters.minRating !== null) params.set("minRating", filters.minRating);
+        if (filters.date) params.set("date", filters.date);
 
-   The slot filter has been removed.
+        const response = await fetch(`${ENDPOINTS.findDoctor}?${params}`, {
+            method: "GET",
+            headers: authHeaders()
+        });
 
-   New filters:
-   - minPrice
-   - maxPrice
-   - minRating
-========================================================= */
+        const data = await readJSON(response);
 
-$("#signinForm").addEventListener(
-    "submit",
-    async (event) => {
-        event.preventDefault();
-
-        const searchButton =
-            $("#search");
-
-        const errorElement =
-            $("#err");
-
-        errorElement.textContent =
-            "";
-
-        const minPriceText =
-            $("#minPrice").value.trim();
-
-        const maxPriceText =
-            $("#maxPrice").value.trim();
-
-        const minRatingText =
-            $("#minRating").value;
-
-        const filters = {
-            city:
-                $("#city").value.trim(),
-
-            speciality:
-                $("#speciality")
-                    .value
-                    .trim(),
-
-            facility:
-                $("#facility")
-                    .value
-                    .trim(),
-
-            name:
-                $("#name").value.trim(),
-
-            date:
-                $("#date").value,
-
-            minPrice:
-                minPriceText === ""
-                    ? null
-                    : Number(
-                        minPriceText
-                    ),
-
-            maxPrice:
-                maxPriceText === ""
-                    ? null
-                    : Number(
-                        maxPriceText
-                    ),
-
-            minRating:
-                minRatingText === ""
-                    ? null
-                    : Number(
-                        minRatingText
-                    )
-        };
-
-        if (
-            filters.minPrice !== null &&
-            filters.minPrice < 0
-        ) {
-            errorElement.textContent =
-                "Minimum price cannot be negative.";
-
-            return;
+        if (!response.ok) {
+            throw new Error(data.message || "No doctors found matching your criteria.");
         }
 
-        if (
-            filters.maxPrice !== null &&
-            filters.maxPrice < 0
-        ) {
-            errorElement.textContent =
-                "Maximum price cannot be negative.";
-
-            return;
-        }
-
-        if (
-            filters.minPrice !== null &&
-            filters.maxPrice !== null &&
-            filters.minPrice >
-                filters.maxPrice
-        ) {
-            errorElement.textContent =
-                "Minimum price cannot be greater than maximum price.";
-
-            return;
-        }
-
-        searchButton.disabled =
-            true;
-
-        searchButton.textContent =
-            "Searching...";
-
-        try {
-            const params = new URLSearchParams();
-
-            if (filters.speciality) {
-                params.set(
-                    "specialization",
-                    filters.speciality
-                );
-            }
-
-            if (filters.facility) {
-                params.set(
-                    "facilityName",
-                    filters.facility
-                );
-            }
-
-            if (filters.minPrice !== null) {
-                params.set(
-                    "minFee",
-                    filters.minPrice
-                );
-            }
-
-            if (filters.maxPrice !== null) {
-                params.set(
-                    "maxFee",
-                    filters.maxPrice
-                );
-            }
-
-            if (filters.minRating !== null) {
-                params.set(
-                    "minRating",
-                    filters.minRating
-                );
-            }
-
-            if (filters.city) {
-                params.set(
-                    "city",
-                    filters.city
-                );
-            }
-
-            if (filters.date) {
-                params.set(
-                    "date",
-                    filters.date
-                );
-            }
-
-            const response =
-                await fetch(
-                    `${ENDPOINTS.findDoctor}?${params}`,
-                    {
-                        method: "GET",
-
-                        headers:
-                            authHeaders()
-                    }
-                );
-
-            const data =
-                await readJSON(
-                    response
-                );
-
-            if (!response.ok) {
-                throw new Error(
-                    data.message ||
-                    "Unable to search for doctors."
-                );
-            }
-
-            const doctors =
-                extractArray(
-                    data,
-                    [
-                        "doctors",
-                        "results"
-                    ]
-                );
-
-            renderDoctors(doctors);
-        } catch (error) {
-            errorElement.textContent =
-                error.message;
-        } finally {
-            searchButton.disabled =
-                false;
-
-            searchButton.textContent =
-                "Search Doctors";
-        }
-    }
-);
-
-/* =========================================================
-   BOOKING DIALOG
-========================================================= */
-
-const bookingDialog =
-    $("#bookingDialog");
-
-const closeBookingDialog = () => {
-    selectedBooking = null;
-
-    $("#bookingForm").reset();
-
-    $("#bookingError").textContent =
-        "";
-
-    if (bookingDialog.open) {
-        bookingDialog.close();
-    }
-};
-
-const openBookingDialog = (
-    button
-) => {
-    selectedBooking = {
-        doctorId:
-            button.dataset.doctorId,
-
-        doctorName:
-            button.dataset.doctorName,
-
-        date:
-            button.dataset.date,
-
-        slot:
-            button.dataset.slot,
-
-        availability:
-            button.dataset.availability,
-
-        isWaiting:
-            button.dataset.isWaiting ===
-            "true"
-    };
-
-    $("#selectedDoctor").textContent =
-        selectedBooking.doctorName;
-
-    $("#selectedDate").textContent =
-        formatDate(
-            selectedBooking.date
-        );
-
-    $("#selectedShift").textContent =
-        selectedBooking.slot;
-
-    $("#selectedAvailability")
-        .textContent =
-            selectedBooking.availability;
-
-    $("#bookingError").textContent =
-        "";
-
-    bookingDialog.showModal();
-};
-
-$("#searchResults").addEventListener(
-    "click",
-    (event) => {
-        const button =
-            event.target.closest(
-                "button[data-action='select-slot']"
-            );
-
-        if (!button) {
-            return;
-        }
-
-        openBookingDialog(button);
-    }
-);
-
-$("#closeBookingDialog")
-    .addEventListener(
-        "click",
-        closeBookingDialog
-    );
-
-$("#cancelBooking")
-    .addEventListener(
-        "click",
-        closeBookingDialog
-    );
-
-bookingDialog.addEventListener(
-    "click",
-    (event) => {
-        /*
-         * Close the dialog when the patient
-         * clicks outside the form.
-         */
-        if (
-            event.target ===
-            bookingDialog
-        ) {
-            closeBookingDialog();
-        }
-    }
-);
-
-/* =========================================================
-   CONFIRM BOOKING
-========================================================= */
-
-$("#bookingForm").addEventListener(
-    "submit",
-    async (event) => {
-        event.preventDefault();
-
-        const errorElement =
-            $("#bookingError");
-
-        const confirmButton =
-            $("#confirmBooking");
-
-        errorElement.textContent =
-            "";
-
-        if (!selectedBooking) {
-            errorElement.textContent =
-                "Please select a doctor and slot.";
-
-            return;
-        }
-
-        const selectedType =
-            $(
-                "input[name='consultationType']:checked",
-                event.currentTarget
-            );
-
-        if (!selectedType) {
-            errorElement.textContent =
-                "Please select a consultation type.";
-
-            return;
-        }
-
-        const requestBody = {
-            doctorId:
-                selectedBooking.doctorId,
-
-            date:
-                selectedBooking.date,
-
-            slot:
-                selectedBooking.slot,
-
-            consultationType:
-                selectedType.value,
-
-            /*
-             * This tells the backend whether the
-             * slot was already full when selected.
-             */
-            waitingList:
-                selectedBooking.isWaiting
-        };
-
-        confirmButton.disabled =
-            true;
-
-        confirmButton.textContent =
-            "Booking...";
-
-        try {
-            const bookingUrl =
-                `${ENDPOINTS.bookDoctor}` +
-                `?id=${encodeURIComponent(selectedBooking.doctorId)}` +
-                `&consultationType=${encodeURIComponent(selectedType.value)}`;
-
-            const response =
-                await fetch(
-                    bookingUrl,
-                    {
-                        method: "POST",
-
-                        headers:
-                            authHeaders(true),
-
-                        body:
-                            JSON.stringify({
-                                date: selectedBooking.date,
-                                slot: selectedBooking.slot
-                            })
-                    }
-                );
-
-            const data =
-                await readJSON(
-                    response
-                );
-
-            if (!response.ok) {
-                throw new Error(
-                    data.message ||
-                    "Unable to book the consultation."
-                );
-            }
-
-            closeBookingDialog();
-
-            globalThis.alert(
-                data.message ||
-                (
-                    requestBody.waitingList
-                        ? "You were added to the waiting list."
-                        : "Consultation booked successfully."
-                )
-            );
-
-            openTab(
-                "consultations"
-            );
-        } catch (error) {
-            errorElement.textContent =
-                error.message;
-        } finally {
-            confirmButton.disabled =
-                false;
-
-            confirmButton.textContent =
-                "Confirm Booking";
-        }
-    }
-);
-
-/* =========================================================
-   STAR RATING FUNCTIONS
-========================================================= */
-
-const ratingStars = (
-    rating,
-    interactive = false
-) => {
-    const selectedRating =
-        Math.max(
-            0,
-            Math.min(
-                5,
-                Number(rating) || 0
-            )
-        );
-
-    return Array.from(
-        { length: 5 },
-        (_, index) => {
-            const starNumber =
-                index + 1;
-
-            const source =
-                starNumber <=
-                selectedRating
-                    ? YELLOW_STAR
-                    : BLACK_STAR;
-
-            if (!interactive) {
-                return `
-                    <img
-                        src="${source}"
-                        alt=""
-                        aria-hidden="true"
-                    >
-                `;
-            }
-
-            return `
-                <button
-                    class="star-button"
-                    type="button"
-                    data-rating="${
-                        starNumber
-                    }"
-                    aria-label="Give ${
-                        starNumber
-                    } star${
-                        starNumber === 1
-                            ? ""
-                            : "s"
-                    }"
-                    aria-pressed="false"
-                >
-                    <img
-                        src="${source}"
-                        alt=""
-                        aria-hidden="true"
-                    >
-                </button>
-            `;
-        }
-    ).join("");
-};
-
-const feedbackContent = (
-    booking,
-    bookingId
-) => {
-    /*
-     * Show Give Feedback only when BOTH
-     * feedback and rating are null.
-     */
-    const feedbackIsEmpty =
-        booking.feedback == null &&
-        booking.rating == null;
-
-    if (feedbackIsEmpty) {
-        return `
-            <div class="feedback-section">
-                <button
-                    class="give-feedback"
-                    type="button"
-                    data-booking-id="${
-                        escapeHTML(
-                            bookingId
-                        )
-                    }"
-                >
-                    Give Feedback
-                </button>
+        const doctors = data.data || [];
+        renderDoctors(doctors);
+    } catch (error) {
+        errorElement.textContent = error.message;
+        $("#searchResults").innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">!</div>
+                <h2>No doctors found</h2>
+                <p>${escapeHTML(error.message)}</p>
             </div>
         `;
+    } finally {
+        searchButton.disabled = false;
+        searchButton.textContent = "Search Doctors";
+    }
+});
+
+/* =========================================================
+   DOCTOR PROFILE & AVAILABILITY VIEW (TAB 1 DETAIL)
+========================================================= */
+
+const fetchDoctorProfile = async (doctorId) => {
+    const searchContainer = $("#doctorSearchContainer");
+    const profileContainer = $("#doctorProfileContainer");
+
+    profileContainer.innerHTML = `<div class="loading-spinner">Loading doctor profile details...</div>`;
+    profileContainer.hidden = false;
+    searchContainer.hidden = true;
+
+    try {
+        const response = await fetch(ENDPOINTS.doctorProfile(doctorId), {
+            method: "GET",
+            headers: authHeaders()
+        });
+        const data = await readJSON(response);
+
+        if (!response.ok) {
+            throw new Error(data.message || "Failed to load doctor profile.");
+        }
+
+        renderDoctorProfileView(data.data);
+    } catch (err) {
+        profileContainer.innerHTML = `
+            <div class="profile-error">
+                <button id="backToSearch" class="back-button">&larr; Back to Search</button>
+                <p class="error-message">${escapeHTML(err.message)}</p>
+            </div>
+        `;
+        $("#backToSearch").addEventListener("click", () => {
+            profileContainer.hidden = true;
+            searchContainer.hidden = false;
+        });
+    }
+};
+
+const renderDoctorProfileView = (profileData) => {
+    const { doctor, experiance, availability, feedback } = profileData;
+    const experiencesList = experiance || profileData.experience || [];
+    const availabilityList = availability || [];
+    const feedbackList = feedback || [];
+
+    const profileContainer = $("#doctorProfileContainer");
+
+    // Map availability by date string (YYYY-MM-DD)
+    const availMap = new Map();
+    availabilityList.forEach(a => {
+        if (a.date) {
+            const dStr = String(a.date).slice(0, 10);
+            availMap.set(dStr, a);
+        }
+    });
+
+    const datesList = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i < 14; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        const dStr = d.toISOString().slice(0, 10);
+        const jsDay = d.getDay();
+        const dayNum = jsDay === 0 ? 7 : jsDay;
+        const isHoliday = String(doctor.holidays || "").includes(String(dayNum));
+
+        const availRecord = availMap.get(dStr) || {};
+        datesList.push({
+            dateStr: dStr,
+            displayDate: d.toLocaleDateString("en-IN", { weekday: "short", day: "2-digit", month: "short" }),
+            isHoliday,
+            slots: {
+                MORNING: {
+                    capacity: Number(availRecord.morningCapacity ?? doctor.morningCapacity ?? 0),
+                    bookings: Number(availRecord.morningBookings ?? 0)
+                },
+                AFTERNOON: {
+                    capacity: Number(availRecord.afternoonCapacity ?? doctor.afternoonCapacity ?? 0),
+                    bookings: Number(availRecord.afternoonBookings ?? 0)
+                },
+                EVENING: {
+                    capacity: Number(availRecord.eveningCapacity ?? doctor.eveningCapacity ?? 0),
+                    bookings: Number(availRecord.eveningBookings ?? 0)
+                }
+            }
+        });
     }
 
-    const rating =
-        Math.max(
-            0,
-            Math.min(
-                5,
-                Number(
-                    booking.rating
-                ) || 0
-            )
-        );
+    const specialities = [doctor.specialization1, doctor.specialization2, doctor.specialization3].filter(Boolean).join(", ");
+    const qualification = [doctor.degreeType, doctor.degreeName, doctor.fieldOfStudy ? `(${doctor.fieldOfStudy})` : "", doctor.institute ? `from ${doctor.institute}` : ""].filter(Boolean).join(" ");
+    const location = [doctor.facilityName, doctor.address, doctor.city, doctor.state, doctor.country, doctor.pin ? `PIN: ${doctor.pin}` : ""].filter(Boolean).join(", ");
+    const doctorRating = Math.max(0, Math.min(5, Number(doctor.rating) || 0));
 
-    return `
-        <div
-            class="feedback-section existing-feedback"
-        >
-            <h3>
-                Your feedback
-            </h3>
-
-            <div
-                class="rating-display"
-                aria-label="${
-                    rating
-                } out of 5 stars"
-            >
-                ${ratingStars(rating)}
-
-                <span class="rating-number">
-                    ${rating}/5
-                </span>
-            </div>
-
-            <p>
-                ${
-                    escapeHTML(
-                        booking.feedback ||
-                        "No written feedback was provided."
-                    )
-                }
-            </p>
+    profileContainer.innerHTML = `
+        <div class="doctor-profile-header">
+            <button id="backToSearch" class="back-button" type="button">&larr; Back to Doctor Discovery</button>
+            <h1 class="profile-title">Dr. ${escapeHTML(doctor.name)}</h1>
         </div>
+
+        <section class="availability-section">
+            <div class="section-title">
+                <h2>🗓️ Available Booking Slots</h2>
+                <p>Select date, slot, and consultation type (Online/Offline) to book an appointment.</p>
+            </div>
+            <div class="availability-carousel">
+                ${datesList.map(item => {
+                    return `
+                        <div class="date-card ${item.isHoliday ? "holiday-card" : ""}">
+                            <div class="date-header">
+                                <h3>${escapeHTML(item.displayDate)}</h3>
+                                ${item.isHoliday ? `<span class="badge holiday-badge">Holiday</span>` : ""}
+                            </div>
+                            <div class="slots-container">
+                                ${["MORNING", "AFTERNOON", "EVENING"].map(slotKey => {
+                                    const slotData = item.slots[slotKey];
+                                    const available = slotData.capacity - slotData.bookings;
+                                    const isAvailable = available > 0 && !item.isHoliday;
+                                    const statusText = item.isHoliday
+                                        ? "Doctor Holiday"
+                                        : (isAvailable ? `${available} available` : "Waiting list");
+                                    const inputName = `consultType_${item.dateStr}_${slotKey}`;
+
+                                    return `
+                                        <div class="slot-box ${isAvailable ? "slot-available" : "slot-waiting"}">
+                                            <div class="slot-header-row">
+                                                <span class="slot-name">${slotKey}</span>
+                                                <span class="slot-badge ${isAvailable ? "badge-available" : "badge-waiting"}">
+                                                    ${escapeHTML(statusText)}
+                                                </span>
+                                            </div>
+                                            <div class="consultation-radio-group">
+                                                <label class="radio-option">
+                                                    <input type="radio" name="${inputName}" value="ONLINE" checked>
+                                                    <span>Online</span>
+                                                </label>
+                                                <label class="radio-option">
+                                                    <input type="radio" name="${inputName}" value="OFFLINE">
+                                                    <span>Offline</span>
+                                                </label>
+                                            </div>
+                                            <button
+                                                class="book-slot-action-btn"
+                                                type="button"
+                                                data-doc-id="${escapeHTML(doctor._id)}"
+                                                data-date="${escapeHTML(item.dateStr)}"
+                                                data-slot="${slotKey}"
+                                                data-radio-name="${inputName}"
+                                            >
+                                                Book ${slotKey.toLowerCase()}
+                                            </button>
+                                        </div>
+                                    `;
+                                }).join("")}
+                            </div>
+                        </div>
+                    `;
+                }).join("")}
+            </div>
+            <p id="profileBookingMessage" class="message" aria-live="polite"></p>
+        </section>
+
+        <section class="doctor-detail-section card">
+            <div class="profile-main-info">
+                ${doctor.photo ? `<img class="doctor-photo-lg" src="${escapeHTML(doctor.photo)}" alt="Dr. ${escapeHTML(doctor.name)}">` : `<div class="doctor-photo-lg placeholder-photo">+</div>`}
+                <div class="profile-details-content">
+                    <h2>Dr. ${escapeHTML(doctor.name)}</h2>
+                    <p class="email">📧 ${escapeHTML(doctor.email)}</p>
+                    <p class="designation">💼 ${escapeHTML(doctor.designation)}</p>
+                    ${specialities ? `<p>🩺 <strong>Specialities:</strong> ${escapeHTML(specialities)}</p>` : ""}
+                    ${qualification ? `<p>🎓 <strong>Qualification:</strong> ${escapeHTML(qualification)}</p>` : ""}
+                    ${location ? `<p>📍 <strong>Facility & Address:</strong> ${escapeHTML(location)}</p>` : ""}
+                    <div class="profile-badges">
+                        <span class="badge fee-badge">Consultation Fee: ${escapeHTML(formatPrice(doctor.consultationFee))}</span>
+                        <span class="badge rating-badge">Rating: ${doctorRating.toFixed(1)} / 5</span>
+                        <span class="badge patient-badge">Patients Consulted: ${escapeHTML(doctor.patientCount ?? 0)}</span>
+                    </div>
+                    ${doctor.about ? `<div class="about-box"><h3>About Doctor</h3><p>${escapeHTML(doctor.about)}</p></div>` : ""}
+                </div>
+            </div>
+        </section>
+
+        ${experiencesList.length ? `
+            <section class="experience-timeline-section">
+                <h2>🏥 Experience & Hospital Work</h2>
+                <div class="timeline-container">
+                    ${experiencesList.map((exp, index) => {
+                        const side = index % 2 === 0 ? "left" : "right";
+                        const start = formatDate(exp.startDate);
+                        const end = exp.isCurrent ? "Present" : formatDate(exp.endDate);
+                        return `
+                            <div class="timeline-item ${side}">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <h3>${escapeHTML(exp.facilityName || "Hospital / Clinic")}</h3>
+                                    <span class="timeline-date">${escapeHTML(start)} - ${escapeHTML(end)}</span>
+                                    <p class="timeline-role">${escapeHTML(exp.designation || "Medical Specialist")}</p>
+                                </div>
+                            </div>
+                        `;
+                    }).join("")}
+                </div>
+            </section>
+        ` : ""}
+
+        ${feedbackList.length ? `
+            <section class="patient-reviews-section">
+                <h2>⭐ Patient Feedback & Reviews (${feedbackList.length})</h2>
+                <div class="reviews-grid">
+                    ${feedbackList.map(fb => {
+                        const patName = fb.patID?.name || "Patient";
+                        const r = Math.max(0, Math.min(5, Number(fb.rating) || 0));
+                        return `
+                            <div class="review-card">
+                                <div class="review-header">
+                                    <strong class="patient-name">${escapeHTML(patName)}</strong>
+                                    <span class="review-rating">${r} / 5 ⭐</span>
+                                </div>
+                                <p class="review-text">${escapeHTML(fb.feedback || "No written review.")}</p>
+                            </div>
+                        `;
+                    }).join("")}
+                </div>
+            </section>
+        ` : ""}
     `;
+
+    $("#backToSearch").addEventListener("click", () => {
+        $("#doctorProfileContainer").hidden = true;
+        $("#doctorSearchContainer").hidden = false;
+    });
+
+    setupTimelineObserver();
 };
 
 /* =========================================================
-   UPCOMING AND PAST BOOKING CARDS
+   ANIMATE EXPERIENCE TIMELINE ON SCROLL
 ========================================================= */
 
-const bookingCard = (
-    booking,
-    upcoming = false
-) => {
-    const bookingId =
-        booking.id ||
-        booking._id ||
-        booking.bookingID;
+const setupTimelineObserver = () => {
+    const items = $$(".timeline-item");
+    if (!items.length) return;
 
-    const consultationType =
-        String(
-            booking.consultationType ||
-            booking.type ||
-            "OFFLINE"
-        ).toUpperCase();
+    const observer = new IntersectionObserver(
+        (entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add("visible");
+                    observer.unobserve(entry.target);
+                }
+            });
+        },
+        { threshold: 0.15 }
+    );
 
-    const status =
-        String(
-            booking.status ||
-            "UNKNOWN"
-        ).toUpperCase();
+    items.forEach((item) => observer.observe(item));
+};
 
-    const canJoin =
-        upcoming &&
-        consultationType ===
-            "ONLINE" &&
-        (
-            status === "CONFIRMED" ||
-            status === "CONSULTING"
-        );
+/* =========================================================
+   BOOK SLOT EVENT LISTENER
+========================================================= */
 
-    const feedback =
-        upcoming
-            ? ""
-            : feedbackContent(
-                booking,
-                bookingId
-            );
+$("#doctorProfileContainer").addEventListener("click", async (event) => {
+    const bookBtn = event.target.closest(".book-slot-action-btn");
+    if (!bookBtn) return;
+
+    const docId = bookBtn.dataset.docId;
+    const date = bookBtn.dataset.date;
+    const slot = bookBtn.dataset.slot;
+    const radioName = bookBtn.dataset.radioName;
+
+    const selectedRadio = $(`input[name="${radioName}"]:checked`);
+    const consultationType = selectedRadio ? selectedRadio.value : "ONLINE";
+
+    const msgEl = $("#profileBookingMessage");
+    setMessage(msgEl, "Booking appointment...", "");
+
+    bookBtn.disabled = true;
+    bookBtn.textContent = "Booking...";
+
+    try {
+        const url = ENDPOINTS.bookDoctor(docId, consultationType);
+        const response = await fetch(url, {
+            method: "POST",
+            headers: authHeaders(true),
+            body: JSON.stringify({ date, slot })
+        });
+
+        const data = await readJSON(response);
+
+        if (!response.ok) {
+            throw new Error(data.message || "Booking failed.");
+        }
+
+        setMessage(msgEl, data.message || "Appointment booked successfully!", "success");
+        globalThis.alert(data.message || "Appointment booked successfully!");
+
+        // Open Upcoming Consultations tab
+        openTab("consultations");
+    } catch (err) {
+        setMessage(msgEl, err.message, "error");
+    } finally {
+        bookBtn.disabled = false;
+        bookBtn.textContent = `Book ${slot.toLowerCase()}`;
+    }
+});
+
+// Click Doctor Card to open Doctor Profile
+$("#searchResults").addEventListener("click", (event) => {
+    const card = event.target.closest(".doctor-card, .view-profile-btn");
+    if (!card) return;
+    const docId = card.dataset.doctorId;
+    if (docId) {
+        fetchDoctorProfile(docId);
+    }
+});
+
+/* =========================================================
+   TAB 2: UPCOMING CONSULTATIONS
+========================================================= */
+
+const renderUpcomingCard = (booking) => {
+    const bookingId = booking._id || booking.id;
+    const consultationType = String(booking.consultationType || "OFFLINE").toUpperCase();
+    const status = String(booking.status || "PENDING").toUpperCase();
+    const tokenNum = booking.token ?? booking.tokenNumber ?? 0;
+
+    const docName = booking.docID?.name || booking.doctorName || booking.docName || "Doctor";
+    const facility = booking.docID?.facilityName || booking.facilityName || "";
+
+    const isOnline = consultationType === "ONLINE";
 
     return `
-        <article
-            class="booking-card ${
-                upcoming
-                    ? ""
-                    : "has-feedback"
-            }"
-            data-booking-id="${
-                escapeHTML(
-                    bookingId
-                )
-            }"
-        >
-            <div class="booking-content">
-                <h2>
-                    ${
-                        escapeHTML(
-                            booking.doctorName ||
-                            booking.docName ||
-                            booking.doctor?.name ||
-                            "Doctor"
-                        )
-                    }
-                </h2>
-
-                <div class="booking-meta">
-                    <span>
-                        Date:
-                        ${
-                            escapeHTML(
-                                formatDate(
-                                    booking.date ||
-                                    booking.bookingDate
-                                )
-                            )
-                        }
-                    </span>
-
-                    <span>
-                        Slot:
-                        ${
-                            escapeHTML(
-                                booking.slot ||
-                                booking.shift ||
-                                "Not provided"
-                            )
-                        }
-                    </span>
-
-                    <span>
-                        Token:
-                        ${
-                            escapeHTML(
-                                booking.token ??
-                                booking.tokenNumber ??
-                                "Not assigned"
-                            )
-                        }
-                    </span>
-
-                    <span>
-                        Status:
-                        ${
-                            escapeHTML(
-                                status
-                            )
-                        }
-                    </span>
-
-                    <span class="consultation-badge">
-                        ${
-                            escapeHTML(
-                                consultationType
-                            )
-                        }
-                    </span>
+        <article class="booking-card" data-booking-id="${escapeHTML(bookingId)}">
+            <div class="booking-card-main">
+                <div class="booking-header">
+                    <h2>Dr. ${escapeHTML(docName)}</h2>
+                    <span class="status-badge status-${status.toLowerCase()}">${escapeHTML(status)}</span>
                 </div>
-
-                ${
-                    booking.facilityName
-                        ? `
-                            <p>
-                                ${
-                                    escapeHTML(
-                                        booking.facilityName
-                                    )
-                                }
-                            </p>
-                        `
-                        : ""
-                }
+                <div class="booking-details-grid">
+                    <p>📅 <strong>Date:</strong> ${escapeHTML(formatDate(booking.date))}</p>
+                    <p>⏰ <strong>Slot:</strong> ${escapeHTML(booking.slot || "N/A")}</p>
+                    <p>💻 <strong>Type:</strong> <span class="type-badge">${escapeHTML(consultationType)}</span></p>
+                    <p>🎫 <strong>Token Number:</strong> <span class="token-badge">${tokenNum}</span> ${tokenNum === 0 ? `<small class="token-note">(Consultation not started)</small>` : ""}</p>
+                    ${facility ? `<p>🏥 <strong>Facility:</strong> ${escapeHTML(facility)}</p>` : ""}
+                </div>
             </div>
-
-            ${
-                canJoin
-                    ? `
-                        <div class="card-actions">
-                            <button
-                                class="join-conference"
-                                type="button"
-                                data-booking-id="${
-                                    escapeHTML(
-                                        bookingId
-                                    )
-                                }"
-                            >
-                                Join Conference
-                            </button>
-                        </div>
-                    `
-                    : ""
-            }
-
-            ${feedback}
+            ${isOnline ? `
+                <div class="booking-card-actions">
+                    <button
+                        class="join-conference-btn"
+                        type="button"
+                        data-booking-id="${escapeHTML(bookingId)}"
+                    >
+                        📹 Join Consultation
+                    </button>
+                </div>
+            ` : ""}
         </article>
     `;
 };
 
-const renderBookings = (
-    container,
-    bookings,
-    upcoming
-) => {
-    if (!bookings.length) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon">
-                    +
+const loadUpcomingConsultations = async () => {
+    const results = $("#consultationResults");
+    const message = $("#consultationMessage");
+    const refreshButton = $("#refreshConsultations");
+
+    if (refreshButton) {
+        refreshButton.disabled = true;
+        refreshButton.textContent = "Loading...";
+    }
+    setMessage(message, "Loading upcoming consultations...");
+
+    try {
+        const response = await fetch(ENDPOINTS.upcoming, {
+            method: "GET",
+            headers: authHeaders()
+        });
+        const data = await readJSON(response);
+
+        if (!response.ok) {
+            throw new Error(data.message || "Failed to load upcoming consultations.");
+        }
+
+        const allBookings = data.data || data.consultations || data.bookings || [];
+        const upcoming = allBookings.filter(b => ["PENDING", "CONFIRMED", "CONSULTING"].includes(String(b.status).toUpperCase()));
+
+        if (!upcoming.length) {
+            results.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">+</div>
+                    <h2>No upcoming consultations</h2>
+                    <p>Your upcoming appointments will appear here once booked.</p>
                 </div>
+            `;
+            setMessage(message, "No upcoming consultations found.", "");
+        } else {
+            results.innerHTML = upcoming.map(renderUpcomingCard).join("");
+            setMessage(message, `Found ${upcoming.length} upcoming consultation(s).`, "success");
+        }
+    } catch (err) {
+        setMessage(message, err.message, "error");
+        results.innerHTML = "";
+    } finally {
+        if (refreshButton) {
+            refreshButton.disabled = false;
+            refreshButton.textContent = "Refresh";
+        }
+    }
+};
 
-                <h2>
-                    ${
-                        upcoming
-                            ? "No upcoming consultations"
-                            : "No past bookings"
-                    }
-                </h2>
+if ($("#refreshConsultations")) {
+    $("#refreshConsultations").addEventListener("click", loadUpcomingConsultations);
+}
 
-                <p>
-                    ${
-                        upcoming
-                            ? "Your upcoming appointments will appear here."
-                            : "Your completed bookings will appear here."
-                    }
-                </p>
-            </div>
+// Join Online Conference
+$("#consultationResults").addEventListener("click", async (event) => {
+    const btn = event.target.closest(".join-conference-btn");
+    if (!btn) return;
+
+    const bookingId = btn.dataset.bookingId;
+    if (!bookingId) return;
+
+    btn.disabled = true;
+    btn.textContent = "Connecting...";
+
+    try {
+        const response = await fetch(ENDPOINTS.agoraToken(bookingId), {
+            method: "GET",
+            headers: authHeaders()
+        });
+        const data = await readJSON(response);
+
+        if (!response.ok) {
+            throw new Error(data.message || "Unable to fetch video credentials.");
+        }
+
+        const payload = data.data || data;
+        const appId = payload.appId || payload.agoraAppId;
+        const token = payload.token || payload.rtcToken;
+        const channelName = payload.channelName || payload.channel;
+
+        if (!appId || !token || !channelName) {
+            throw new Error("Invalid conference token response from backend.");
+        }
+
+        localStorage.setItem("agoraAppId", appId);
+        localStorage.setItem("conferenceToken", token);
+        localStorage.setItem("conferenceChannel", channelName);
+
+        globalThis.location.href = "../conference/index.html";
+    } catch (err) {
+        setMessage($("#consultationMessage"), err.message, "error");
+        btn.disabled = false;
+        btn.textContent = "📹 Join Consultation";
+    }
+});
+
+/* =========================================================
+   TAB 3: PAST BOOKINGS & FEEDBACK
+========================================================= */
+
+const renderRatingStars = (rating, interactive = false) => {
+    const r = Math.max(0, Math.min(5, Number(rating) || 0));
+    return Array.from({ length: 5 }, (_, i) => {
+        const starNum = i + 1;
+        const src = starNum <= r ? YELLOW_STAR : BLACK_STAR;
+        if (!interactive) {
+            return `<img class="star-img" src="${src}" alt="star">`;
+        }
+        return `
+            <button type="button" class="star-btn" data-rating="${starNum}" aria-label="${starNum} stars">
+                <img class="star-img" src="${src}" alt="star">
+            </button>
         `;
+    }).join("");
+};
 
+const renderPastCard = (booking) => {
+    const bookingId = booking._id || booking.id;
+    const status = String(booking.status || "DONE").toUpperCase();
+    const docName = booking.docID?.name || booking.doctorName || booking.docName || "Doctor";
+    const isDone = status === "DONE";
+    const hasFeedback = booking.rating != null;
+
+    return `
+        <article class="booking-card past-card" data-booking-id="${escapeHTML(bookingId)}">
+            <div class="booking-card-main">
+                <div class="booking-header">
+                    <h2>Dr. ${escapeHTML(docName)}</h2>
+                    <span class="status-badge status-${status.toLowerCase()}">${escapeHTML(status)}</span>
+                </div>
+                <div class="booking-details-grid">
+                    <p>📅 <strong>Date:</strong> ${escapeHTML(formatDate(booking.date))}</p>
+                    <p>⏰ <strong>Slot:</strong> ${escapeHTML(booking.slot || "N/A")}</p>
+                    <p>💻 <strong>Type:</strong> ${escapeHTML(booking.consultationType || "OFFLINE")}</p>
+                </div>
+            </div>
+
+            ${isDone ? `
+                <div class="feedback-container">
+                    ${hasFeedback ? `
+                        <div class="existing-feedback">
+                            <h3>Your Feedback</h3>
+                            <div class="stars-display">${renderRatingStars(booking.rating)} <span>(${booking.rating}/5)</span></div>
+                            <p class="feedback-text">${escapeHTML(booking.feedback || "No written review provided.")}</p>
+                        </div>
+                    ` : `
+                        <form class="feedback-form" data-booking-id="${escapeHTML(bookingId)}">
+                            <h3>Submit Feedback & Review</h3>
+                            <div class="star-rating-picker" data-selected-rating="5">
+                                ${renderRatingStars(5, true)}
+                            </div>
+                            <div class="form-group">
+                                <textarea name="feedback" placeholder="Write your review about the consultation..." required></textarea>
+                            </div>
+                            <p class="feedback-msg message"></p>
+                            <button type="submit" class="submit-feedback-btn">Submit Review</button>
+                        </form>
+                    `}
+                </div>
+            ` : ""}
+        </article>
+    `;
+};
+
+const loadPastBookings = async () => {
+    const results = $("#pastBookingResults");
+    const message = $("#bookingHistoryMessage");
+
+    setMessage(message, "Loading past bookings...");
+
+    try {
+        const response = await fetch(ENDPOINTS.past, {
+            method: "GET",
+            headers: authHeaders()
+        });
+        const data = await readJSON(response);
+
+        if (!response.ok) {
+            throw new Error(data.message || "Failed to load past bookings.");
+        }
+
+        const allBookings = data.data || data.bookings || data.consultations || [];
+        const past = allBookings.filter(b => ["DONE", "CANCELED"].includes(String(b.status).toUpperCase()));
+
+        if (!past.length) {
+            results.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">+</div>
+                    <h2>No past bookings</h2>
+                    <p>Your completed or canceled appointments will appear here.</p>
+                </div>
+            `;
+            setMessage(message, "No past bookings found.", "");
+        } else {
+            results.innerHTML = past.map(renderPastCard).join("");
+            setMessage(message, `Found ${past.length} past booking(s).`, "success");
+        }
+    } catch (err) {
+        setMessage(message, err.message, "error");
+        results.innerHTML = "";
+    }
+};
+
+// Past bookings feedback interaction
+$("#pastBookingResults").addEventListener("click", (event) => {
+    const starBtn = event.target.closest(".star-btn");
+    if (!starBtn) return;
+
+    const picker = starBtn.closest(".star-rating-picker");
+    const rating = Number(starBtn.dataset.rating);
+    picker.dataset.selectedRating = rating;
+
+    $$(".star-btn", picker).forEach((btn) => {
+        const r = Number(btn.dataset.rating);
+        const img = $("img", btn);
+        img.src = r <= rating ? YELLOW_STAR : BLACK_STAR;
+    });
+});
+
+$("#pastBookingResults").addEventListener("submit", async (event) => {
+    const form = event.target.closest(".feedback-form");
+    if (!form) return;
+
+    event.preventDefault();
+    const bookingId = form.dataset.bookingId;
+    const feedback = $("textarea[name='feedback']", form).value.trim();
+    const picker = $(".star-rating-picker", form);
+    const rating = Number(picker.dataset.selectedRating || 5);
+    const msgEl = $(".feedback-msg", form);
+    const submitBtn = $(".submit-feedback-btn", form);
+
+    if (!feedback) {
+        setMessage(msgEl, "Please write your review.", "error");
         return;
     }
 
-    container.innerHTML =
-        bookings
-            .map((booking) =>
-                bookingCard(
-                    booking,
-                    upcoming
-                )
-            )
-            .join("");
-};
-
-/* =========================================================
-   LOAD UPCOMING CONSULTATIONS
-========================================================= */
-
-const loadUpcomingConsultations =
-    async () => {
-        const results =
-            $("#consultationResults");
-
-        const message =
-            $("#consultationMessage");
-
-        const refreshButton =
-            $("#refreshConsultations");
-
-        refreshButton.disabled =
-            true;
-
-        refreshButton.textContent =
-            "Loading...";
-
-        setMessage(
-            message,
-            "Loading upcoming consultations..."
-        );
-
-        try {
-            const response =
-                await fetch(
-                    ENDPOINTS.upcoming,
-                    {
-                        method: "GET",
-                        headers:
-                            authHeaders()
-                    }
-                );
-
-            const data =
-                await readJSON(
-                    response
-                );
-
-            if (!response.ok) {
-                throw new Error(
-                    data.message ||
-                    "Unable to load upcoming consultations."
-                );
-            }
-
-            const consultations =
-                extractArray(
-                    data,
-                    [
-                        "consultations",
-                        "bookings"
-                    ]
-                );
-
-            renderBookings(
-                results,
-                consultations,
-                true
-            );
-
-            setMessage(
-                message,
-                `${consultations.length} upcoming consultation(s).`,
-                "success"
-            );
-        } catch (error) {
-            setMessage(
-                message,
-                error.message,
-                "error"
-            );
-        } finally {
-            refreshButton.disabled =
-                false;
-
-            refreshButton.textContent =
-                "Refresh";
-        }
-    };
-
-$("#refreshConsultations")
-    .addEventListener(
-        "click",
-        loadUpcomingConsultations
-    );
-
-/* =========================================================
-   LOAD PAST BOOKINGS
-========================================================= */
-
-const loadPastBookings =
-    async () => {
-        const results =
-            $("#pastBookingResults");
-
-        const message =
-            $("#bookingHistoryMessage");
-
-        setMessage(
-            message,
-            "Loading past bookings..."
-        );
-
-        try {
-            const response =
-                await fetch(
-                    ENDPOINTS.past,
-                    {
-                        method: "GET",
-                        headers:
-                            authHeaders()
-                    }
-                );
-
-            const data =
-                await readJSON(
-                    response
-                );
-
-            if (!response.ok) {
-                throw new Error(
-                    data.message ||
-                    "Unable to load past bookings."
-                );
-            }
-
-            const bookings =
-                extractArray(
-                    data,
-                    [
-                        "bookings",
-                        "consultations"
-                    ]
-                );
-
-            renderBookings(
-                results,
-                bookings,
-                false
-            );
-
-            setMessage(
-                message,
-                `${bookings.length} past booking(s).`,
-                "success"
-            );
-        } catch (error) {
-            setMessage(
-                message,
-                error.message,
-                "error"
-            );
-        }
-    };
-
-/* =========================================================
-   OPEN AND UPDATE FEEDBACK FORM
-========================================================= */
-
-const pastBookingResults =
-    $("#pastBookingResults");
-
-const openFeedbackForm = (
-    bookingId,
-    bookingCardElement
-) => {
-    const feedbackSection =
-        $(
-            ".feedback-section",
-            bookingCardElement
-        );
-
-    feedbackSection.innerHTML = `
-        <form
-            class="feedback-form"
-            data-booking-id="${
-                escapeHTML(
-                    bookingId
-                )
-            }"
-        >
-            <label>
-                Your feedback
-
-                <textarea
-                    name="feedback"
-                    maxlength="1000"
-                    placeholder="Describe your experience with the doctor..."
-                    required
-                ></textarea>
-            </label>
-
-            <div>
-                <p class="rating-label">
-                    Select rating
-                </p>
-
-                <div
-                    class="rating-selector"
-                    data-selected-rating="0"
-                    role="group"
-                    aria-label="Select a rating"
-                >
-                    ${
-                        ratingStars(
-                            0,
-                            true
-                        )
-                    }
-                </div>
-            </div>
-
-            <p
-                class="feedback-form-message message"
-                aria-live="polite"
-            ></p>
-
-            <div class="feedback-actions">
-                <button
-                    class="cancel-feedback"
-                    type="button"
-                >
-                    Cancel
-                </button>
-
-                <button
-                    class="submit-feedback"
-                    type="submit"
-                >
-                    Submit Feedback
-                </button>
-            </div>
-        </form>
-    `;
-
-    $(
-        "textarea",
-        feedbackSection
-    ).focus();
-};
-
-const updateSelectedStars = (
-    ratingSelector,
-    selectedRating
-) => {
-    ratingSelector.dataset
-        .selectedRating =
-            String(
-                selectedRating
-            );
-
-    $$(
-        ".star-button",
-        ratingSelector
-    ).forEach((button) => {
-        const starNumber =
-            Number(
-                button.dataset.rating
-            );
-
-        const isSelected =
-            starNumber <=
-            selectedRating;
-
-        const image =
-            $("img", button);
-
-        image.src =
-            isSelected
-                ? YELLOW_STAR
-                : BLACK_STAR;
-
-        button.setAttribute(
-            "aria-pressed",
-            String(isSelected)
-        );
-    });
-};
-
-/* =========================================================
-   FEEDBACK CLICK HANDLING
-========================================================= */
-
-pastBookingResults.addEventListener(
-    "click",
-    (event) => {
-        const giveFeedbackButton =
-            event.target.closest(
-                ".give-feedback"
-            );
-
-        if (giveFeedbackButton) {
-            const bookingId =
-                giveFeedbackButton
-                    .dataset
-                    .bookingId;
-
-            const bookingCardElement =
-                giveFeedbackButton.closest(
-                    ".booking-card"
-                );
-
-            openFeedbackForm(
-                bookingId,
-                bookingCardElement
-            );
-
-            return;
-        }
-
-        const starButton =
-            event.target.closest(
-                ".star-button"
-            );
-
-        if (starButton) {
-            const ratingSelector =
-                starButton.closest(
-                    ".rating-selector"
-                );
-
-            const selectedRating =
-                Number(
-                    starButton
-                        .dataset
-                        .rating
-                );
-
-            updateSelectedStars(
-                ratingSelector,
-                selectedRating
-            );
-
-            return;
-        }
-
-        const cancelButton =
-            event.target.closest(
-                ".cancel-feedback"
-            );
-
-        if (cancelButton) {
-            loadPastBookings();
-        }
-    }
-);
-
-/* =========================================================
-   SUBMIT FEEDBACK
-========================================================= */
-
-pastBookingResults.addEventListener(
-    "submit",
-    async (event) => {
-        const form =
-            event.target.closest(
-                ".feedback-form"
-            );
-
-        if (!form) {
-            return;
-        }
-
-        event.preventDefault();
-
-        const bookingId =
-            form.dataset.bookingId;
-
-        const feedback =
-            $(
-                "textarea[name='feedback']",
-                form
-            ).value.trim();
-
-        const ratingSelector =
-            $(
-                ".rating-selector",
-                form
-            );
-
-        const rating =
-            Number(
-                ratingSelector
-                    .dataset
-                    .selectedRating
-            );
-
-        const message =
-            $(
-                ".feedback-form-message",
-                form
-            );
-
-        const submitButton =
-            $(
-                ".submit-feedback",
-                form
-            );
-
-        if (!feedback) {
-            setMessage(
-                message,
-                "Please enter your feedback.",
-                "error"
-            );
-
-            return;
-        }
-
-        if (
-            !Number.isInteger(rating) ||
-            rating < 1 ||
-            rating > 5
-        ) {
-            setMessage(
-                message,
-                "Please select a rating from 1 to 5 stars.",
-                "error"
-            );
-
-            return;
-        }
-
-        submitButton.disabled =
-            true;
-
-        submitButton.textContent =
-            "Submitting...";
-
-        setMessage(
-            message,
-            "Submitting your feedback..."
-        );
-
-        try {
-            const response =
-                await fetch(
-                    ENDPOINTS.feedback(
-                        bookingId
-                    ),
-                    {
-                        method: "PUT",
-
-                        headers:
-                            authHeaders(true),
-
-                        body:
-                            JSON.stringify({
-                                feedback,
-                                rating
-                            })
-                    }
-                );
-
-            const data =
-                await readJSON(
-                    response
-                );
-
-            if (!response.ok) {
-                throw new Error(
-                    data.message ||
-                    "Unable to submit feedback."
-                );
-            }
-
-            setMessage(
-                $("#bookingHistoryMessage"),
-                data.message ||
-                "Feedback submitted successfully.",
-                "success"
-            );
-
-            /*
-             * Reloading replaces the feedback form
-             * with the saved feedback and stars.
-             */
-            await loadPastBookings();
-        } catch (error) {
-            setMessage(
-                message,
-                error.message,
-                "error"
-            );
-
-            submitButton.disabled =
-                false;
-
-            submitButton.textContent =
-                "Submit Feedback";
-        }
-    }
-);
-
-/* =========================================================
-   JOIN ONLINE CONFERENCE
-========================================================= */
-
-const joinConference = async (
-    bookingId,
-    button
-) => {
-    button.disabled =
-        true;
-
-    button.textContent =
-        "Joining...";
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Submitting...";
 
     try {
-        const response =
-            await fetch(
-                ENDPOINTS.conference(
-                    bookingId
-                ),
-                {
-                    method: "GET",
-                    headers:
-                        authHeaders()
-                }
-            );
-
-        const data =
-            await readJSON(
-                response
-            );
+        const url = ENDPOINTS.takeFeedback(bookingId);
+        const response = await fetch(url, {
+            method: "PUT",
+            headers: authHeaders(true),
+            body: JSON.stringify({ rating, feedback })
+        });
+        const data = await readJSON(response);
 
         if (!response.ok) {
-            throw new Error(
-                data.message ||
-                "Unable to fetch conference credentials."
-            );
+            throw new Error(data.message || "Failed to submit feedback.");
         }
 
-        const credentials =
-            data.data || data;
-
-        const appId =
-            credentials.appId ||
-            credentials.agoraAppId;
-
-        const channel =
-            credentials.channelName ||
-            credentials.channel;
-
-        const conferenceToken =
-            credentials.token ||
-            credentials.rtcToken;
-
-        if (
-            !channel ||
-            !conferenceToken
-        ) {
-            throw new Error(
-                "The backend did not return a channel and token."
-            );
-        }
-
-        if (appId) {
-            localStorage.setItem(
-                "agoraAppId",
-                appId
-            );
-
-            sessionStorage.setItem(
-                "agoraAppId",
-                appId
-            );
-        }
-
-        sessionStorage.setItem(
-            "conferenceChannel",
-            channel
-        );
-
-        sessionStorage.setItem(
-            "conferenceToken",
-            conferenceToken
-        );
-
-        sessionStorage.setItem(
-            "currentConsultationBookingId",
-            bookingId
-        );
-
-        globalThis.location.href =
-            "../conference/index.html";
-    } catch (error) {
-        setMessage(
-            $("#consultationMessage"),
-            error.message,
-            "error"
-        );
-
-        button.disabled =
-            false;
-
-        button.textContent =
-            "Join Conference";
+        setMessage($("#bookingHistoryMessage"), data.message || "Feedback submitted successfully!", "success");
+        await loadPastBookings();
+    } catch (err) {
+        setMessage(msgEl, err.message, "error");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Review";
     }
-};
-
-$("#consultationResults")
-    .addEventListener(
-        "click",
-        async (event) => {
-            const button =
-                event.target.closest(
-                    ".join-conference"
-                );
-
-            if (!button) {
-                return;
-            }
-
-            const bookingId =
-                button.dataset.bookingId;
-
-            if (!bookingId) {
-                setMessage(
-                    $("#consultationMessage"),
-                    "Booking ID is missing.",
-                    "error"
-                );
-
-                return;
-            }
-
-            await joinConference(
-                bookingId,
-                button
-            );
-        }
-    );
+});
 
 /* =========================================================
-   REPORT CARDS
+   TAB 4: REPORTS
 ========================================================= */
 
-const reportCard = (report) => {
-    const fileUrl =
-        report.fileUrl ||
-        report.url ||
-        "#";
-
-    const fileType =
-        String(
-            report.fileType ||
-            "FILE"
-        ).toUpperCase();
+const renderReportCard = (report) => {
+    const fileUrl = report.fileUrl || report.url || report.reportUrl || "#";
+    const title = report.title || report.name || "Medical Report";
+    const category = report.category || "General";
+    const fileType = String(report.fileType || "PDF").toUpperCase();
+    const uploadedAt = formatDate(report.createdAt || report.date);
 
     return `
         <article class="report-card">
-            <div class="report-information">
-                <h2>
-                    ${
-                        escapeHTML(
-                            report.title ||
-                            "Medical Report"
-                        )
-                    }
-                </h2>
-
-                <div class="booking-meta">
-                    <span>
-                        Category:
-                        ${
-                            escapeHTML(
-                                report.category ||
-                                "OTHER"
-                            )
-                        }
-                    </span>
-
-                    <span>
-                        Type:
-                        ${
-                            escapeHTML(
-                                fileType
-                            )
-                        }
-                    </span>
-
-                    <span>
-                        Uploaded:
-                        ${
-                            escapeHTML(
-                                formatDate(
-                                    report.createdAt ||
-                                    report.uploadedAt
-                                )
-                            )
-                        }
-                    </span>
-
-                    <span>
-                        Uploaded by:
-                        ${
-                            escapeHTML(
-                                report.uploadedBy ||
-                                "Not provided"
-                            )
-                        }
-                    </span>
+            <div class="report-main">
+                <div class="report-icon">📄</div>
+                <div class="report-info">
+                    <h2>${escapeHTML(title)}</h2>
+                    <p>📂 <strong>Category:</strong> ${escapeHTML(category)} | 📌 <strong>Format:</strong> ${escapeHTML(fileType)}</p>
+                    <p>🗓️ <strong>Uploaded:</strong> ${escapeHTML(uploadedAt)}</p>
                 </div>
             </div>
-
-            <div class="card-actions">
-                <a
-                    class="report-open-button"
-                    href="${
-                        escapeHTML(
-                            fileUrl
-                        )
-                    }"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    Open Report
+            <div class="report-actions">
+                <a class="download-report-btn" href="${escapeHTML(fileUrl)}" target="_blank" rel="noopener noreferrer" download>
+                    📥 Open / Download Report
                 </a>
             </div>
         </article>
     `;
 };
 
-/* =========================================================
-   LOAD REPORTS
-========================================================= */
+const loadReports = async () => {
+    const results = $("#reportResults");
+    const message = $("#reportMessage");
 
-const loadReports =
-    async () => {
-        const results =
-            $("#reportResults");
+    setMessage(message, "Loading medical reports...");
 
-        const message =
-            $("#reportMessage");
+    try {
+        const response = await fetch(ENDPOINTS.getReports, {
+            method: "GET",
+            headers: authHeaders()
+        });
+        const data = await readJSON(response);
 
-        setMessage(
-            message,
-            "Loading reports..."
-        );
-
-        try {
-            const response =
-                await fetch(
-                    ENDPOINTS.reports,
-                    {
-                        method: "GET",
-                        headers:
-                            authHeaders()
-                    }
-                );
-
-            const data =
-                await readJSON(
-                    response
-                );
-
-            if (!response.ok) {
-                throw new Error(
-                    data.message ||
-                    "Unable to load reports."
-                );
-            }
-
-            const reports =
-                extractArray(
-                    data,
-                    ["reports", "files"]
-                );
-
-            if (!reports.length) {
-                results.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">
-                            +
-                        </div>
-
-                        <h2>
-                            No reports found
-                        </h2>
-
-                        <p>
-                            Your medical reports will appear here.
-                        </p>
-                    </div>
-                `;
-            } else {
-                results.innerHTML =
-                    reports
-                        .map(reportCard)
-                        .join("");
-            }
-
-            setMessage(
-                message,
-                `${reports.length} report(s).`,
-                "success"
-            );
-        } catch (error) {
-            setMessage(
-                message,
-                error.message,
-                "error"
-            );
+        if (!response.ok) {
+            throw new Error(data.message || "Failed to load reports.");
         }
-    };
+
+        const reports = data.data || data.reports || [];
+
+        if (!reports.length) {
+            results.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">+</div>
+                    <h2>No medical reports found</h2>
+                    <p>Your diagnostic and consultation reports will appear here.</p>
+                </div>
+            `;
+            setMessage(message, "No reports available.", "");
+        } else {
+            results.innerHTML = reports.map(renderReportCard).join("");
+            setMessage(message, `Loaded ${reports.length} report(s).`, "success");
+        }
+    } catch (err) {
+        setMessage(message, err.message, "error");
+        results.innerHTML = "";
+    }
+};
 
 /* =========================================================
-   INITIAL PAGE SETUP
+   INITIALIZATION
 ========================================================= */
 
-const searchDateInput =
-    $("#date");
-
+const searchDateInput = $("#date");
 if (searchDateInput) {
-    searchDateInput.min =
-        getTodayDate();
-
-    searchDateInput.value =
-        getTodayDate();
+    searchDateInput.min = getTodayDate();
+    searchDateInput.value = getTodayDate();
 }
 
 openTab("find");
