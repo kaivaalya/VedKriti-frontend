@@ -197,7 +197,7 @@ form.addEventListener("submit", async (event) => {
                 method : "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localstorage.getItem("token")}`
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`
                 },
             })
             redirect = await profileSetup.json();
@@ -207,7 +207,7 @@ form.addEventListener("submit", async (event) => {
                 method : "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localstorage.getItem("token")}`
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`
                 },
             })
             redirect = await profileSetup.json();
