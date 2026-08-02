@@ -26,6 +26,11 @@ const ENDPOINTS = {
     conference: (bookingId) =>
         `${domain}/api/booking/agora-token?bookingId=${
             encodeURIComponent(bookingId)
+        }`,
+
+    uploadReport: (patientId) =>
+        `${domain}/api/report/upload-report?id=${
+            encodeURIComponent(patientId)
         }`
 };
 
@@ -267,7 +272,7 @@ tabContainer.addEventListener(
    CONSULTATION ACTION BUTTONS
 ========================================================= */
 
-const consultationActions = (booking) => {
+const consultationActions = (booking, isSearch = false) => {
     const bookingId =
         getBookingId(booking);
 
@@ -351,6 +356,24 @@ const consultationActions = (booking) => {
         `;
     }
 
+    if (status === "DONE" && !isSearch) {
+        return `
+            <label class="upload-report-btn button" style="cursor:pointer; display:inline-block; padding:8px 16px; background:var(--primary, #007bff); color:#fff; border-radius:4px; text-align:center;">
+                Capture Report
+                <input 
+                    type="file" 
+                    accept="image/*" 
+                    capture="environment"
+                    class="upload-report-input"
+                    data-action="upload-report"
+                    data-booking-id="${escapeHTML(bookingId)}"
+                    data-patient-id="${escapeHTML(booking.patID || booking.patient?._id || booking.patientId || '')}"
+                    style="display: none;"
+                />
+            </label>
+        `;
+    }
+
     return "";
 };
 
@@ -358,7 +381,7 @@ const consultationActions = (booking) => {
    CONSULTATION CARD
 ========================================================= */
 
-const consultationCard = (booking) => {
+const consultationCard = (booking, isSearch = false) => {
     const status =
         String(
             booking.status || "UNKNOWN"
@@ -428,10 +451,29 @@ const consultationCard = (booking) => {
                 </p>
 
                 ${
+                    isSearch && booking.rating
+                        ? `
+                            <p class="rating">
+                                <strong>Rating:</strong> ${escapeHTML(booking.rating)}
+                            </p>
+                        `
+                        : ""
+                }
+                ${
+                    isSearch && booking.feedback
+                        ? `
+                            <p class="feedback">
+                                <strong>Feedback:</strong> ${escapeHTML(booking.feedback)}
+                            </p>
+                        `
+                        : ""
+                }
+
+                ${
                     booking.reason
                         ? `
                             <p class="feedback">
-                                ${escapeHTML(
+                                <strong>Reason:</strong> ${escapeHTML(
                                     booking.reason
                                 )}
                             </p>
@@ -441,7 +483,7 @@ const consultationCard = (booking) => {
             </div>
 
             <div class="card-actions">
-                ${consultationActions(booking)}
+                ${consultationActions(booking, isSearch)}
             </div>
         </article>
     `;
@@ -449,7 +491,8 @@ const consultationCard = (booking) => {
 
 const renderConsultations = (
     container,
-    consultations
+    consultations,
+    isSearch = false
 ) => {
     if (!consultations.length) {
         container.innerHTML = `
@@ -467,7 +510,7 @@ const renderConsultations = (
 
     container.innerHTML =
         consultations
-            .map(consultationCard)
+            .map(c => consultationCard(c, isSearch))
             .join("");
 };
 
@@ -729,7 +772,8 @@ $("#searchForm").addEventListener(
 
             renderConsultations(
                 searchResults,
-                consultations
+                consultations,
+                true
             );
 
             setMessage(
@@ -889,6 +933,71 @@ todayResults.addEventListener(
             button.disabled = false;
             button.textContent =
                 originalText;
+        }
+    }
+);
+
+todayResults.addEventListener(
+    "change",
+    async (event) => {
+        const input = event.target;
+
+        if (!input.classList.contains("upload-report-input")) {
+            return;
+        }
+
+        const file = input.files[0];
+        if (!file) return;
+
+        const bookingId = input.dataset.bookingId;
+        const patientId = input.dataset.patientId || "unknown";
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("title", "Consultation Report");
+        formData.append("category", "PRESCRIPTION");
+        formData.append("bookingId", bookingId);
+
+        setMessage(
+            consultationMessage,
+            "Uploading report..."
+        );
+
+        try {
+            const response = await fetch(
+                ENDPOINTS.uploadReport(patientId),
+                {
+                    method: "PUT",
+                    headers: {
+                        Authorization: `Bearer ${getToken()}`
+                    },
+                    body: formData
+                }
+            );
+
+            const data = await readJSON(response);
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message || "Failed to upload report."
+                );
+            }
+
+            setMessage(
+                consultationMessage,
+                "Report uploaded successfully.",
+                "success"
+            );
+            
+            // Clear input so it can be uploaded again if needed
+            input.value = "";
+        } catch (error) {
+            setMessage(
+                consultationMessage,
+                error.message,
+                "error"
+            );
+            input.value = "";
         }
     }
 );
