@@ -58,6 +58,13 @@ const setMessage = (element, text, state = "") => {
     element.className = `message${state ? ` ${state}` : ""}`;
 };
 
+const renderLoader = (text = "Loading...") => `
+    <div class="loader-container">
+        <div class="spinner"></div>
+        <p class="loader-text">${escapeHTML(text)}</p>
+    </div>
+`;
+
 const getTodayDate = () => {
     const today = new Date();
     const year = today.getFullYear();
@@ -128,6 +135,8 @@ tabContainer.addEventListener("click", (event) => {
    SEARCH DOCTORS (TAB 1)
 ========================================================= */
 
+const doctorsMap = new Map();
+
 const renderDoctorCard = (doctor) => {
     /*
       Excluding fields: verified, verificationNote, createdAt, updatedAt, __v, _id from card display text
@@ -190,8 +199,6 @@ const renderDoctorCard = (doctor) => {
     `;
 };
 
-const doctorsMap = new Map();
-
 const renderDoctors = (doctors) => {
     doctorsMap.clear();
     (doctors || []).forEach(d => {
@@ -215,6 +222,7 @@ $("#signinForm").addEventListener("submit", async (event) => {
     event.preventDefault();
     const searchButton = $("#search");
     const errorElement = $("#err");
+    const searchResults = $("#searchResults");
     errorElement.textContent = "";
 
     const minPriceText = $("#minPrice").value.trim();
@@ -247,6 +255,7 @@ $("#signinForm").addEventListener("submit", async (event) => {
 
     searchButton.disabled = true;
     searchButton.textContent = "Searching...";
+    searchResults.innerHTML = renderLoader("Searching for doctors...");
 
     try {
         const params = new URLSearchParams();
@@ -274,7 +283,7 @@ $("#signinForm").addEventListener("submit", async (event) => {
         renderDoctors(doctors);
     } catch (error) {
         errorElement.textContent = error.message;
-        $("#searchResults").innerHTML = `
+        searchResults.innerHTML = `
             <div class="empty-state">
                 <div class="empty-state-icon">!</div>
                 <h2>No doctors found</h2>
@@ -295,7 +304,7 @@ const fetchDoctorProfile = async (doctorId, fallbackDoctor = null) => {
     const searchContainer = $("#doctorSearchContainer");
     const profileContainer = $("#doctorProfileContainer");
 
-    profileContainer.innerHTML = `<div class="loading-spinner">Loading doctor profile details...</div>`;
+    profileContainer.innerHTML = renderLoader("Fetching doctor profile & slot availability...");
     profileContainer.hidden = false;
     searchContainer.hidden = true;
 
@@ -323,7 +332,7 @@ const fetchDoctorProfile = async (doctorId, fallbackDoctor = null) => {
         } else {
             profileContainer.innerHTML = `
                 <div class="profile-error">
-                    <button id="backToSearch" class="back-button">&larr; Back to Search</button>
+                    <button id="backToSearch" class="back-button" type="button">&larr; Back to Doctor Search</button>
                     <p class="error-message">${escapeHTML(err.message)}</p>
                 </div>
             `;
@@ -335,23 +344,42 @@ const fetchDoctorProfile = async (doctorId, fallbackDoctor = null) => {
     }
 };
 
-const renderDoctorProfileView = (profileData) => {
-    const { doctor, experiance, availability, feedback } = profileData;
-    const experiencesList = experiance || profileData.experience || [];
-    const availabilityList = availability || [];
-    const feedbackList = feedback || [];
+const buildDatesList = (availabilityList, doctor) => {
+    if (availabilityList && availabilityList.length > 0) {
+        return availabilityList.map(item => {
+            const rawDate = item.date;
+            const d = new Date(rawDate);
+            const dateStr = String(rawDate).slice(0, 10);
+            const displayDate = Number.isNaN(d.getTime())
+                ? String(rawDate)
+                : d.toLocaleDateString("en-IN", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
+            const jsDay = Number.isNaN(d.getTime()) ? 1 : d.getDay();
+            const dayNum = jsDay === 0 ? 7 : jsDay;
+            const isHoliday = String(doctor.holidays || "").includes(String(dayNum));
 
-    const profileContainer = $("#doctorProfileContainer");
+            return {
+                dateStr,
+                displayDate,
+                isHoliday,
+                slots: {
+                    MORNING: {
+                        capacity: Number(item.morningCapacity ?? doctor.morningCapacity ?? 0),
+                        bookings: Number(item.morningBookings ?? 0)
+                    },
+                    AFTERNOON: {
+                        capacity: Number(item.afternoonCapacity ?? doctor.afternoonCapacity ?? 0),
+                        bookings: Number(item.afternoonBookings ?? 0)
+                    },
+                    EVENING: {
+                        capacity: Number(item.eveningCapacity ?? doctor.eveningCapacity ?? 0),
+                        bookings: Number(item.eveningBookings ?? 0)
+                    }
+                }
+            };
+        });
+    }
 
-    // Map availability by date string (YYYY-MM-DD)
-    const availMap = new Map();
-    availabilityList.forEach(a => {
-        if (a.date) {
-            const dStr = String(a.date).slice(0, 10);
-            availMap.set(dStr, a);
-        }
-    });
-
+    // Fallback: Generate 14 days starting from today if availabilityList is empty
     const datesList = [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -364,27 +392,38 @@ const renderDoctorProfileView = (profileData) => {
         const dayNum = jsDay === 0 ? 7 : jsDay;
         const isHoliday = String(doctor.holidays || "").includes(String(dayNum));
 
-        const availRecord = availMap.get(dStr) || {};
         datesList.push({
             dateStr: dStr,
-            displayDate: d.toLocaleDateString("en-IN", { weekday: "short", day: "2-digit", month: "short" }),
+            displayDate: d.toLocaleDateString("en-IN", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }),
             isHoliday,
             slots: {
                 MORNING: {
-                    capacity: Number(availRecord.morningCapacity ?? doctor.morningCapacity ?? 0),
-                    bookings: Number(availRecord.morningBookings ?? 0)
+                    capacity: Number(doctor.morningCapacity ?? 0),
+                    bookings: 0
                 },
                 AFTERNOON: {
-                    capacity: Number(availRecord.afternoonCapacity ?? doctor.afternoonCapacity ?? 0),
-                    bookings: Number(availRecord.afternoonBookings ?? 0)
+                    capacity: Number(doctor.afternoonCapacity ?? 0),
+                    bookings: 0
                 },
                 EVENING: {
-                    capacity: Number(availRecord.eveningCapacity ?? doctor.eveningCapacity ?? 0),
-                    bookings: Number(availRecord.eveningBookings ?? 0)
+                    capacity: Number(doctor.eveningCapacity ?? 0),
+                    bookings: 0
                 }
             }
         });
     }
+
+    return datesList;
+};
+
+const renderDoctorProfileView = (profileData) => {
+    const { doctor, experiance, availability, feedback } = profileData;
+    const experiencesList = experiance || profileData.experience || [];
+    const availabilityList = availability || [];
+    const feedbackList = feedback || [];
+
+    const profileContainer = $("#doctorProfileContainer");
+    const datesList = buildDatesList(availabilityList, doctor);
 
     const specialities = [doctor.specialization1, doctor.specialization2, doctor.specialization3].filter(Boolean).join(", ");
     const qualification = [doctor.degreeType, doctor.degreeName, doctor.fieldOfStudy ? `(${doctor.fieldOfStudy})` : "", doctor.institute ? `from ${doctor.institute}` : ""].filter(Boolean).join(" ");
@@ -670,6 +709,7 @@ const loadUpcomingConsultations = async () => {
         refreshButton.textContent = "Loading...";
     }
     setMessage(message, "Loading upcoming consultations...");
+    results.innerHTML = renderLoader("Loading upcoming consultations...");
 
     try {
         const response = await fetch(ENDPOINTS.upcoming, {
@@ -829,6 +869,7 @@ const loadPastBookings = async () => {
     const message = $("#bookingHistoryMessage");
 
     setMessage(message, "Loading past bookings...");
+    results.innerHTML = renderLoader("Loading past bookings...");
 
     try {
         const response = await fetch(ENDPOINTS.past, {
@@ -956,6 +997,7 @@ const loadReports = async () => {
     const message = $("#reportMessage");
 
     setMessage(message, "Loading medical reports...");
+    results.innerHTML = renderLoader("Loading medical reports...");
 
     try {
         const response = await fetch(ENDPOINTS.getReports, {
