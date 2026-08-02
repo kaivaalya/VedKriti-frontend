@@ -8,7 +8,7 @@ const ENDPOINTS = {
     doctorDocuments: (doctorId) =>
     `${domain}/api/doctors/${
         encodeURIComponent(doctorId)
-    }/documents`
+    }/documents`,
     statistics:
         `${domain}/api/admin/dashboard`,
 
