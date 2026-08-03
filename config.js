@@ -1,1 +1,1 @@
-export const domain = "https://docslot-backend-1.onrender.com";
+export const domain = "https://docslot-backend-1.onrender.com/";
