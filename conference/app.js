@@ -634,7 +634,7 @@ if (workflowUploadInput) {
         if (!currentBookingId) return;
 
         const formData = new FormData();
-        formData.append("file", file);
+        formData.append("report", file);
         formData.append("title", "Consultation Report");
         formData.append("category", "PRESCRIPTION");
         formData.append("bookingId", currentBookingId);
