@@ -92,8 +92,8 @@ const updateFormMode = () => {
         passwordInput.autocomplete =
             "new-password";
             
-        if (usernameGroup) usernameGroup.style.display = 'grid';
-        if (roleGroup) roleGroup.style.display = 'grid';
+        if (usernameGroup) usernameGroup.hidden = false;
+        if (roleGroup) roleGroup.hidden = false;
         
         usernameInput.required = true;
         roleSelect.required = true;
@@ -107,11 +107,11 @@ const updateFormMode = () => {
         passwordInput.autocomplete =
             "current-password";
             
-        if (usernameGroup) usernameGroup.style.display = 'none';
-        if (roleGroup) roleGroup.style.display = 'none';
+        if (usernameGroup) usernameGroup.hidden = true;
+        if (roleGroup) roleGroup.hidden = false;
         
         usernameInput.required = false;
-        roleSelect.required = false;
+        roleSelect.required = true;
     }
 
     updateRoleOptions();
@@ -374,7 +374,7 @@ form.addEventListener(
         const role =
             roleSelect.value;
 
-        if (createRadio.checked && !role) {
+        if (!role) {
             errorElement.textContent =
                 "Please select a role.";
 
@@ -399,21 +399,10 @@ form.addEventListener(
             createRadio.checked
                 ? "/api/auth/signin-user"
                 : "/api/auth/login-user";
-                
-        let requestBody;
-        if (createRadio.checked) {
-            requestBody = {
-                name: username,
-                password,
-                email,
-                role
-            };
-        } else {
-            requestBody = {
-                email,
-                password
-            };
-        }
+
+        const payload = createRadio.checked
+            ? { name: username, password, email, role }
+            : { email, password, role };
 
         setLoading(true);
 
@@ -427,7 +416,7 @@ form.addEventListener(
                         "Content-Type":
                             "application/json"
                     },
-                    body: JSON.stringify(requestBody)
+                    body: JSON.stringify(payload)
                 }
             );
 
