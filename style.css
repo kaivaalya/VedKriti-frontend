@@ -154,17 +154,19 @@ nav a:hover::after {
 /* Hero */
 
 .hero {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(420px, 0.9fr);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     align-items: center;
+    text-align: center;
     min-height: 100vh;
     padding: calc(var(--header-height) + 5rem) 7vw 5rem;
     color: var(--white);
     background:
         radial-gradient(
-            circle at 15% 15%,
+            circle at 50% 50%,
             rgba(46, 185, 194, 0.12),
-            transparent 30%
+            transparent 40%
         ),
         var(--ink);
 }
@@ -172,7 +174,7 @@ nav a:hover::after {
 .hero__content {
     position: relative;
     z-index: 2;
-    max-width: 720px;
+    max-width: 800px;
 }
 
 .eyebrow {
@@ -191,7 +193,8 @@ nav a:hover::after {
 }
 
 .hero h1 {
-    max-width: 780px;
+    max-width: 800px;
+    margin: 0 auto;
     font-size: clamp(3.8rem, 7vw, 7.8rem);
     font-weight: 800;
     text-transform: uppercase;
@@ -202,47 +205,21 @@ nav a:hover::after {
 }
 
 .hero__copy {
-    max-width: 590px;
-    margin-top: 1.6rem;
+    max-width: 650px;
+    margin: 1.6rem auto 0;
     color: rgba(255, 255, 255, 0.62);
     font-size: clamp(1rem, 1.3vw, 1.17rem);
 }
 
 .hero__actions {
     display: flex;
+    justify-content: center;
     flex-wrap: wrap;
     gap: 0.8rem;
-    margin-top: 2rem;
+    margin-top: 2.5rem;
 }
 
-.hero__visual {
-    position: relative;
-    padding-left: 5vw;
-}
 
-.hero__image-wrap {
-    position: relative;
-    overflow: hidden;
-    aspect-ratio: 0.95;
-}
-
-.hero__image-wrap::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-        135deg,
-        rgba(21, 25, 26, 0.12),
-        rgba(46, 185, 194, 0.14)
-    );
-}
-
-.hero__image-wrap img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    filter: saturate(0.78);
-}
 
 .floating-note {
     position: absolute;
@@ -541,15 +518,9 @@ footer small {
     }
 
     .hero {
-        grid-template-columns: 1fr;
         gap: 4rem;
         padding-right: 6vw;
         padding-left: 6vw;
-    }
-
-    .hero__visual {
-        width: min(620px, 100%);
-        padding-left: 0;
     }
 
     .floating-note {

@@ -26,6 +26,10 @@ const passwordInput =
 const togglePasswordButton =
     document.getElementById("togglePassword");
 
+const usernameGroup = document.getElementById("usernameGroup");
+const roleGroup = document.getElementById("roleGroup");
+const usernameInput = document.getElementById("username");
+
 /* =========================================================
    ROLE OPTIONS
 ========================================================= */
@@ -87,15 +91,27 @@ const updateFormMode = () => {
 
         passwordInput.autocomplete =
             "new-password";
+            
+        if (usernameGroup) usernameGroup.style.display = 'grid';
+        if (roleGroup) roleGroup.style.display = 'grid';
+        
+        usernameInput.required = true;
+        roleSelect.required = true;
     } else {
         buttonText.textContent =
             "Log In";
 
         formDescription.textContent =
-            "Log in to access your VedKriti account.";
+            "Log in to access your DocSlot account.";
 
         passwordInput.autocomplete =
             "current-password";
+            
+        if (usernameGroup) usernameGroup.style.display = 'none';
+        if (roleGroup) roleGroup.style.display = 'none';
+        
+        usernameInput.required = false;
+        roleSelect.required = false;
     }
 
     updateRoleOptions();
@@ -358,7 +374,7 @@ form.addEventListener(
         const role =
             roleSelect.value;
 
-        if (!role) {
+        if (createRadio.checked && !role) {
             errorElement.textContent =
                 "Please select a role.";
 
@@ -383,6 +399,21 @@ form.addEventListener(
             createRadio.checked
                 ? "/api/auth/signin-user"
                 : "/api/auth/login-user";
+                
+        let requestBody;
+        if (createRadio.checked) {
+            requestBody = {
+                name: username,
+                password,
+                email,
+                role
+            };
+        } else {
+            requestBody = {
+                email,
+                password
+            };
+        }
 
         setLoading(true);
 
@@ -396,12 +427,7 @@ form.addEventListener(
                         "Content-Type":
                             "application/json"
                     },
-                    body: JSON.stringify({
-                        name: username,
-                        password,
-                        email,
-                        role
-                    })
+                    body: JSON.stringify(requestBody)
                 }
             );
 

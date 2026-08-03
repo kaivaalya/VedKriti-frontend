@@ -73,6 +73,20 @@ const escapeHTML = (value) =>
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
 
+const renderStars = (rating) => {
+    const num = Math.round(Number(rating) || 0);
+    const validNum = Math.max(0, Math.min(5, num));
+    let starsHtml = '';
+    for (let i = 1; i <= 5; i++) {
+        if (i <= validNum) {
+            starsHtml += `<img src="../media/ystar.png" alt="star" style="width:16px; height:16px; display:inline-block; margin-right:2px;" />`;
+        } else {
+            starsHtml += `<img src="../media/bstar.png" alt="star" style="width:16px; height:16px; display:inline-block; margin-right:2px;" />`;
+        }
+    }
+    return `<span style="display:flex; align-items:center;">${starsHtml}</span>`;
+};
+
 const readJSON = async (response) => {
     const contentType =
         response.headers.get("content-type") || "";
@@ -471,9 +485,9 @@ const consultationCard = (booking, isSearch = false) => {
                 ${
                     isSearch && booking.rating
                         ? `
-                            <p class="rating">
-                                <strong>Rating:</strong> ${escapeHTML(booking.rating)}
-                            </p>
+                            <div class="rating" style="display:flex; align-items:center; gap:8px; margin-top:10px;">
+                                <strong>Rating:</strong> ${renderStars(booking.rating)}
+                            </div>
                         `
                         : ""
                 }

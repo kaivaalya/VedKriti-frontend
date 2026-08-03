@@ -801,33 +801,119 @@ footer {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 3rem clamp(1rem, 5vw, 5rem);
+    padding: 3.5rem clamp(1rem, 5vw, 5rem);
     color: rgba(255, 255, 255, 0.75);
     background: var(--ink);
     text-align: center;
 }
 
 #bottom {
-    width: 125px;
+    width: 145px;
     height: auto;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
     filter: brightness(0) invert(1);
 }
 
 footer h2 {
     color: var(--surface);
-    font-size: clamp(1.35rem, 3vw, 2rem);
+    font-size: clamp(1.4rem, 3vw, 2.2rem);
 }
 
 #desc {
-    max-width: 760px;
+    max-width: 800px;
     margin-top: 1rem;
     line-height: 1.7;
 }
 
 .copyright {
-    margin-top: 1.6rem;
-    font-size: 0.78rem;
+    margin-top: 2rem;
+    font-size: 0.8rem;
+}
+
+/* Upcoming Booking Cards Styling */
+.booking-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.booking-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(46, 31, 143, 0.1);
+    border-color: var(--accent);
+}
+
+.booking-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+
+.booking-header h2 {
+    font-size: 1.4rem;
+    color: var(--ink);
+    margin: 0;
+}
+
+.status-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.booking-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.booking-details-grid p {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.type-badge, .token-badge {
+    background: var(--paper);
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-weight: 600;
+    color: var(--accent-dark);
+}
+
+.booking-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--border);
+}
+
+.join-conference-btn {
+    background: var(--accent);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.join-conference-btn:hover {
+    background: var(--accent-dark);
 }
 
 @keyframes appear {

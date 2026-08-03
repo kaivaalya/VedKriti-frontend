@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>VedKriti Authentication</title>
+    <title>DocSlot Authentication</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,14 +24,14 @@
             <div id="auth" class="auth-card">
 
                 <a href="../index.html" class="brand">
-                    <img src="../media/VedKriti-icon.png" alt="VedKriti">
+                    <img src="../media/DocSlot-icon.png" alt="DocSlot">
                 </a>
 
                 <div id="welcome" class="welcome">
                     <p class="eyebrow">Healthcare made simple</p>
-                    <h1>Welcome to VedKriti</h1>
+                    <h1>Welcome to DocSlot</h1>
                     <p id="formDescription">
-                        Log in to access your VedKriti account.
+                        Log in to access your DocSlot account.
                     </p>
                 </div>
 
@@ -48,7 +48,7 @@
                 </div>
 
                 <form id="signinForm">
-                    <div class="form-group">
+                    <div class="form-group" id="usernameGroup">
                         <label for="username">Username</label>
 
                         <input
@@ -98,7 +98,7 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group" id="roleGroup">
                         <label for="role">Continue as</label>
 
                         <select id="role" name="role" required>
@@ -130,7 +130,7 @@
             <div class="side-overlay"></div>
 
             <div class="side-content">
-                <p class="eyebrow">VedKriti Healthcare</p>
+                <p class="eyebrow">DocSlot Healthcare</p>
 
                 <h2>
                     Better care begins with the right connection.
